@@ -34,11 +34,25 @@ Tiers come from `breakpoints` in `@devhub/design-tokens` (`useTier`).
 - Group labels use title case. Settings sits in the last group, not pinned to the bottom edge.
 - State persists in `localStorage`: `dh.sidebar` (`expanded | compact | hidden`), `dh.sidebarWidth`, `dh.inspector`.
 
+## Toolbar
+
+```text
+( ▤ ‹ › )  Pessoal › Projetos                                ( ▥ ⋯ )
+ Navegação  breadcrumbs (nav "Trilha")                       Ações
+```
+
+- Two glass capsules (`dh-material-regular`, fully rounded) group related controls. Breadcrumbs are plain text, not capsules.
+- Back/forward use the Navigation API where available (Chromium, WebView2) to disable at the ends of history. Elsewhere, back uses React Router's history index and forward stays enabled.
+- Below 560px of toolbar width (measured with ResizeObserver, not the window), back/forward move into the "Mais ações" menu and the trail shows only the current page.
+- "Mais ações" (Radix DropdownMenu, `elevated` material) always holds secondary actions. Today: "Copiar link da página", with a check icon and a `role="status"` announcement.
+- Scroll edge: the bottom separator appears only after the main content scrolls.
+- P4 adds search to the actions capsule, P5 the Control Center trigger.
+
 ## Materials in the shell
 
 - Sidebar: `dh-material-regular` (functional layer).
-- Overlay sheets: `dh-material-elevated` (transient layer) over a `scrim`.
-- Toolbar, main content, inspector, status bar: solid. The toolbar gets its scroll-edge treatment in P3.
+- Overlay sheets and menus: `dh-material-elevated` (transient layer); sheets sit over a `scrim`.
+- Toolbar bar, main content, inspector, status bar: solid. Only the toolbar control groups use glass.
 
 ## Navigation behaviour
 
@@ -48,9 +62,10 @@ Tiers come from `breakpoints` in `@devhub/design-tokens` (`useTier`).
 - Modules without a screen show an empty state with the roadmap phase from `MASTER_PLAN.md` §38. Nothing is simulated.
 - `/dev/tokens` is a token specimen page outside the shell.
 
-## Not in P2
+## Not built yet
 
-- Breadcrumbs, back/forward, search and toolbar actions (P3).
+- Search (P4) and the Control Center trigger (P5).
+- Module-specific toolbar actions: added with each module screen.
 - Enter/exit motion for sheets (P7).
 - A workspace selector: there is only one personal workspace, so the sidebar shows a static label.
 - A mobile bottom tab bar: native mobile is the Expo app (Phase 8). The web uses the overlay sidebar on phones.

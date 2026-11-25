@@ -51,6 +51,7 @@ export function AppShell() {
   const [overlay, setOverlay] = useState(false)
   const [inspectorSheet, setInspectorSheet] = useState(false)
   const [resizing, setResizing] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
 
   // expanded/large: docked sidebar, user picks expanded | compact | hidden.
   // medium: compact rail + overlay. compact: overlay only.
@@ -140,7 +141,8 @@ export function AppShell() {
 
         <div className="flex min-w-0 flex-1 flex-col">
           <Toolbar
-            title={module?.label ?? 'DevHub'}
+            crumbs={[{ label: 'Pessoal' }, { label: module?.label ?? 'Página não encontrada' }]}
+            scrolled={scrolled}
             sidebarVisible={sidebarVisible}
             onToggleSidebar={toggleSidebar}
             inspector={inspector ? { open: inspectorOpen, onToggle: toggleInspector } : undefined}
@@ -150,6 +152,7 @@ export function AppShell() {
               id="main"
               ref={mainRef}
               tabIndex={-1}
+              onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
               className="min-w-0 flex-1 overflow-y-auto outline-none"
             >
               <Outlet />

@@ -9,8 +9,8 @@ Phases and scope are defined in `MASTER_PLAN.md` §38–39. This file tracks sta
 | P0   | Monorepo, TS, lint, format, Vite app                                   | Done   |
 | P1   | Graphite Lime tokens (dark, light, materials, motion) + contrast check | Done   |
 | P2   | Application Shell + adaptive sidebar + module routes                   | Done   |
-| P3   | Contextual toolbar                                                     | Next   |
-| P4   | Spotlight Search (Ctrl/Cmd+K)                                          | —      |
+| P3   | Contextual toolbar                                                     | Done   |
+| P4   | Spotlight Search (Ctrl/Cmd+K)                                          | Next   |
 | P5   | Control Center                                                         | —      |
 | P6   | Activity Shelf                                                         | —      |
 | P7   | Motion pass + reduced motion                                           | —      |

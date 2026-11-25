@@ -46,6 +46,7 @@ for (const name of Object.keys(themes) as ThemeName[]) {
     check(t.actionPrimaryFg, t.actionPrimary, TEXT, 'actionPrimaryFg/actionPrimary')
     check(t.actionPrimaryFg, t.actionPrimaryHover, TEXT, 'actionPrimaryFg/actionPrimaryHover')
     check(t.actionPrimary, t.surface, UI, 'actionPrimary/surface')
+    check(t.onBrand, t.brand, TEXT, 'onBrand/brand')
   })
 
   test(`${name}: controls and focus`, () => {

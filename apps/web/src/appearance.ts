@@ -1,20 +1,35 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import type { Appearance } from '@devhub/design-tokens'
+import { oneOf, usePersistentState } from './usePersistentState'
 
 // 'system' removes the attribute so tokens.css follows the OS media queries.
 export type ThemePref = 'system' | 'dark' | 'light'
 export type MaterialPref = 'system' | Appearance
 
-function usePref<T extends string>(key: string, attr: string, fallback: T) {
-  const [value, setValue] = useState<T>(() => (localStorage.getItem(key) as T | null) ?? fallback)
+function useRootAttribute(attr: string, value: string) {
   useEffect(() => {
     const root = document.documentElement
     if (value === 'system') root.removeAttribute(attr)
     else root.setAttribute(attr, value)
-    localStorage.setItem(key, value)
-  }, [key, attr, value])
-  return [value, setValue] as const
+  }, [attr, value])
 }
 
-export const useThemePref = () => usePref<ThemePref>('dh.theme', 'data-theme', 'system')
-export const useMaterialPref = () => usePref<MaterialPref>('dh.material', 'data-material', 'system')
+export function useThemePref() {
+  const state = usePersistentState<ThemePref>(
+    'dh.theme',
+    'system',
+    oneOf<ThemePref>('system', 'dark', 'light'),
+  )
+  useRootAttribute('data-theme', state[0])
+  return state
+}
+
+export function useMaterialPref() {
+  const state = usePersistentState<MaterialPref>(
+    'dh.material',
+    'system',
+    oneOf<MaterialPref>('system', 'clear', 'balanced', 'tinted', 'opaque'),
+  )
+  useRootAttribute('data-material', state[0])
+  return state
+}

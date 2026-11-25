@@ -1,7 +1,8 @@
 @import 'tailwindcss';
 @import '@fontsource-variable/geist';
 @import '@fontsource-variable/jetbrains-mono';
-@import '@devhub/design-tokens/tokens.css';
+/* In the components layer so Tailwind utilities can override material classes. */
+@import '@devhub/design-tokens/tokens.css' layer(components);
 
 /* Tailwind reads DevHub tokens only: default palette, fonts and breakpoints are cleared
    so components cannot drift to raw colours. */
@@ -17,6 +18,8 @@
   --color-control: var(--dh-color-border-control);
   --color-focus: var(--dh-color-focus);
   --color-brand: var(--dh-color-brand);
+  --color-on-brand: var(--dh-color-on-brand);
+  --color-scrim: var(--dh-color-scrim);
   --color-accent: var(--dh-color-accent-text);
   --color-action: var(--dh-color-action-primary);
   --color-action-hover: var(--dh-color-action-primary-hover);

@@ -46,6 +46,10 @@ export interface ThemeColors {
   borderControl: string
   focus: string
   brand: string
+  /** Text and icons placed on the brand lime. */
+  onBrand: string
+  /** Backdrop behind modal sheets. */
+  scrim: string
   accentText: string
   actionPrimary: string
   actionPrimaryHover: string
@@ -73,6 +77,8 @@ export const themes: Record<ThemeName, ThemeColors> = {
     borderControl: '#71757D',
     focus: lime[400],
     brand: lime[400],
+    onBrand: g[950],
+    scrim: 'rgb(0 0 0 / 0.5)',
     accentText: lime[400],
     actionPrimary: lime[400],
     actionPrimaryHover: lime[300],
@@ -98,6 +104,8 @@ export const themes: Record<ThemeName, ThemeColors> = {
     borderControl: '#7C8087',
     focus: lime[700],
     brand: lime[400],
+    onBrand: g[950],
+    scrim: 'rgb(0 0 0 / 0.25)',
     accentText: lime[700],
     actionPrimary: lime[700],
     actionPrimaryHover: lime[800],

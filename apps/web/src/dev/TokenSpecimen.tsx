@@ -1,5 +1,5 @@
-// P1 token specimen. Replaced by the Application Shell in P2.
-import { useMaterialPref, useThemePref, type MaterialPref, type ThemePref } from './appearance'
+// Token specimen at /dev/tokens: visual check for themes and materials (not in navigation).
+import { useMaterialPref, useThemePref, type MaterialPref, type ThemePref } from '../appearance'
 
 const swatches = [
   ['canvas', 'bg-canvas'],
@@ -61,7 +61,7 @@ function Segmented<T extends string>(props: {
   )
 }
 
-export function App() {
+export function TokenSpecimen() {
   const [theme, setTheme] = useThemePref()
   const [material, setMaterial] = useMaterialPref()
 

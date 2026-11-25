@@ -46,7 +46,17 @@ Tiers come from `breakpoints` in `@devhub/design-tokens` (`useTier`).
 - Below 560px of toolbar width (measured with ResizeObserver, not the window), back/forward move into the "Mais ações" menu and the trail shows only the current page.
 - "Mais ações" (Radix DropdownMenu, `elevated` material) always holds secondary actions. Today: "Copiar link da página", with a check icon and a `role="status"` announcement.
 - Scroll edge: the bottom separator appears only after the main content scrolls.
-- P4 adds search to the actions capsule, P5 the Control Center trigger.
+- A search capsule opens Spotlight: field-like button with the shortcut on wide toolbars, icon only when narrow. P5 adds the Control Center trigger.
+
+## Spotlight (`shell/Spotlight.tsx`)
+
+- `Ctrl/⌘ + K` toggles it; the toolbar search button opens it. Built on cmdk inside a Radix Dialog (`elevated` material, `floating` radius, top 12vh).
+- Groups: Recentes (only with an empty query), Navegação (12 modules, matched by name and purpose), Ações (sidebar, inspector when the page has one, copy link), Aparência (theme and material, current choice checked).
+- The query lives in cmdk, so every open starts empty and in the default order.
+- Recents: last 5 command ids in `localStorage` (`dh.spotlight.recent`). Ids that no longer resolve on the current page are skipped.
+- No match: says so, and that projects, repositories and documents join the search when those modules exist. Nothing is invented.
+- Focus: input on open; on close it returns to whatever opened it, unless navigation already moved focus to the new page title.
+- Commands are built in `AppShell` from real state. Destructive or remote operations must never be added as direct Spotlight commands without confirmation (MASTER_PLAN §21).
 
 ## Materials in the shell
 
@@ -64,7 +74,8 @@ Tiers come from `breakpoints` in `@devhub/design-tokens` (`useTier`).
 
 ## Not built yet
 
-- Search (P4) and the Control Center trigger (P5).
+- Control Center trigger (P5).
+- Searching projects, repositories, documents and integrations: each joins Spotlight with its module.
 - Module-specific toolbar actions: added with each module screen.
 - Enter/exit motion for sheets (P7).
 - A workspace selector: there is only one personal workspace, so the sidebar shows a static label.

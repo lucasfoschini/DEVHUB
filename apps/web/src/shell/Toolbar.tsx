@@ -9,7 +9,9 @@ import {
   Link2,
   PanelLeft,
   PanelRight,
+  Search,
 } from 'lucide-react'
+import { isApple, shortcut } from '../platform'
 
 /** Below this toolbar width, back/forward move into the overflow menu and breadcrumbs
  *  collapse to the current page. Measured on the toolbar, not the window. */
@@ -87,24 +89,16 @@ export function Toolbar(props: {
   sidebarVisible: boolean
   onToggleSidebar: () => void
   inspector?: { open: boolean; onToggle: () => void }
+  /** Shown as a check on the menu button after copy-link; announced by the shell. */
+  notice: { ok: boolean } | null
+  onCopyLink: () => void
+  onSearch: () => void
 }) {
   const [ref, width] = useWidth<HTMLElement>()
   const narrow = width < NARROW
   const navigate = useNavigate()
   const can = useHistoryAvailability()
-  const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null)
-
-  useEffect(() => {
-    if (!notice) return
-    const t = setTimeout(() => setNotice(null), 2000)
-    return () => clearTimeout(t)
-  }, [notice])
-
-  const copyLink = () =>
-    navigator.clipboard.writeText(window.location.href).then(
-      () => setNotice({ text: 'Link copiado', ok: true }),
-      () => setNotice({ text: 'Não foi possível copiar o link', ok: false }),
-    )
+  const notice = props.notice
 
   const crumbs = narrow ? props.crumbs.slice(-1) : props.crumbs
   const iconProps = { size: 18, strokeWidth: 1.75, 'aria-hidden': true } as const
@@ -159,9 +153,24 @@ export function Toolbar(props: {
         </ol>
       </nav>
 
-      <span role="status" className="sr-only">
-        {notice?.text}
-      </span>
+      <Group label="Busca">
+        {narrow ? (
+          <IconButton label={`Buscar (${shortcut('K')})`} onClick={props.onSearch}>
+            <Search {...iconProps} />
+          </IconButton>
+        ) : (
+          <button
+            type="button"
+            onClick={props.onSearch}
+            aria-keyshortcuts={isApple ? 'Meta+K' : 'Control+K'}
+            className="flex h-8 w-52 items-center gap-2 rounded-full px-2.5 text-secondary transition-colors duration-(--dh-duration-fast) hover:bg-hover hover:text-primary"
+          >
+            <Search size={16} strokeWidth={1.75} aria-hidden />
+            <span className="flex-1 text-left">Buscar</span>
+            <kbd className="font-sans text-caption text-secondary">{shortcut('K')}</kbd>
+          </button>
+        )}
+      </Group>
 
       <Group label="Ações">
         {props.inspector && (
@@ -213,7 +222,7 @@ export function Toolbar(props: {
                   <DropdownMenu.Separator className="mx-1 my-1 h-px bg-subtle" />
                 </>
               )}
-              <DropdownMenu.Item className={menuItem} onSelect={copyLink}>
+              <DropdownMenu.Item className={menuItem} onSelect={props.onCopyLink}>
                 <Link2 size={16} aria-hidden /> Copiar link da página
               </DropdownMenu.Item>
             </DropdownMenu.Content>

@@ -1,12 +1,15 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
-import { Outlet, useLocation, useMatches } from 'react-router'
+import { Outlet, useLocation, useMatches, useNavigate } from 'react-router'
 import { Tooltip } from 'radix-ui'
-import type { ModuleDef } from '../nav'
+import { Layers, Link2, Monitor, Moon, PanelLeft, PanelRight, Sun } from 'lucide-react'
+import { modules, type ModuleDef } from '../nav'
+import { shortcut } from '../platform'
 import { oneOf, usePersistentState } from '../usePersistentState'
-import { useMaterialPref, useThemePref } from '../appearance'
+import { useMaterialPref, useThemePref, type MaterialPref, type ThemePref } from '../appearance'
 import { Sidebar } from './Sidebar'
 import { SIDEBAR, type DockedMode } from './sidebarSize'
 import { Sheet } from './Sheet'
+import { Spotlight, type SpotlightCommand } from './Spotlight'
 import { StatusBar } from './StatusBar'
 import { Toolbar } from './Toolbar'
 import { useTier } from './useTier'
@@ -16,6 +19,20 @@ export interface RouteHandle {
 }
 
 type DockPref = DockedMode | 'hidden'
+
+const themeOptions: { value: ThemePref; label: string; icon: typeof Sun }[] = [
+  { value: 'system', label: 'Tema: seguir o sistema', icon: Monitor },
+  { value: 'dark', label: 'Tema: escuro', icon: Moon },
+  { value: 'light', label: 'Tema: claro', icon: Sun },
+]
+
+const materialOptions: { value: MaterialPref; label: string }[] = [
+  { value: 'system', label: 'Material: seguir o sistema' },
+  { value: 'clear', label: 'Material: translúcido' },
+  { value: 'balanced', label: 'Material: equilibrado' },
+  { value: 'tinted', label: 'Material: tonalizado' },
+  { value: 'opaque', label: 'Material: opaco (reduzir transparência)' },
+]
 
 function InspectorBody({ inspector }: { inspector: NonNullable<ModuleDef['inspector']> }) {
   return (
@@ -27,8 +44,9 @@ function InspectorBody({ inspector }: { inspector: NonNullable<ModuleDef['inspec
 }
 
 export function AppShell() {
-  useThemePref()
-  useMaterialPref()
+  const [theme, setTheme] = useThemePref()
+  const [material, setMaterial] = useMaterialPref()
+  const navigate = useNavigate()
   const tier = useTier()
   const { pathname } = useLocation()
   const module = (useMatches().at(-1)?.handle as RouteHandle | undefined)?.module
@@ -52,6 +70,20 @@ export function AppShell() {
   const [inspectorSheet, setInspectorSheet] = useState(false)
   const [resizing, setResizing] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [spotlight, setSpotlight] = useState(false)
+  const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null)
+
+  useEffect(() => {
+    if (!notice) return
+    const t = setTimeout(() => setNotice(null), 2000)
+    return () => clearTimeout(t)
+  }, [notice])
+
+  const copyLink = () =>
+    navigator.clipboard.writeText(window.location.href).then(
+      () => setNotice({ text: 'Link copiado', ok: true }),
+      () => setNotice({ text: 'Não foi possível copiar o link', ok: false }),
+    )
 
   // expanded/large: docked sidebar, user picks expanded | compact | hidden.
   // medium: compact rail + overlay. compact: overlay only.
@@ -78,15 +110,76 @@ export function AppShell() {
       : setInspectorSheet(!inspectorSheet)
 
   const onShortcut = useEffectEvent((e: KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === '\\') {
+    if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return
+    if (e.key === '\\') {
       e.preventDefault()
       toggleSidebar()
+    } else if (e.key.toLowerCase() === 'k') {
+      e.preventDefault()
+      setSpotlight((open) => !open)
     }
   })
   useEffect(() => {
     window.addEventListener('keydown', onShortcut)
     return () => window.removeEventListener('keydown', onShortcut)
   }, [])
+
+  const commands: SpotlightCommand[] = [
+    ...modules.map((m) => ({
+      id: `nav:${m.path}`,
+      label: m.label,
+      group: 'Navegação' as const,
+      icon: m.icon,
+      keywords: [m.purpose],
+      hint: m.path === pathname ? 'Atual' : undefined,
+      perform: () => navigate(m.path),
+    })),
+    {
+      id: 'action:sidebar',
+      label: sidebarVisible ? 'Ocultar barra lateral' : 'Mostrar barra lateral',
+      group: 'Ações',
+      icon: PanelLeft,
+      hint: shortcut('\\'),
+      perform: toggleSidebar,
+    },
+    ...(inspector
+      ? [
+          {
+            id: 'action:inspector',
+            label: inspectorOpen ? 'Ocultar inspetor' : 'Mostrar inspetor',
+            group: 'Ações' as const,
+            icon: PanelRight,
+            perform: toggleInspector,
+          },
+        ]
+      : []),
+    {
+      id: 'action:copy-link',
+      label: 'Copiar link da página',
+      group: 'Ações',
+      icon: Link2,
+      keywords: ['url', 'compartilhar'],
+      perform: () => void copyLink(),
+    },
+    ...themeOptions.map((o) => ({
+      id: `theme:${o.value}`,
+      label: o.label,
+      group: 'Aparência' as const,
+      icon: o.icon,
+      keywords: ['aparência', 'dark', 'light', 'modo'],
+      checked: theme === o.value,
+      perform: () => setTheme(o.value),
+    })),
+    ...materialOptions.map((o) => ({
+      id: `material:${o.value}`,
+      label: o.label,
+      group: 'Aparência' as const,
+      icon: Layers,
+      keywords: ['vidro', 'glass', 'transparência', 'acessibilidade'],
+      checked: material === o.value,
+      perform: () => setMaterial(o.value),
+    })),
+  ]
 
   useEffect(() => {
     document.title = module ? `${module.label} · DevHub` : 'DevHub'
@@ -143,6 +236,9 @@ export function AppShell() {
           <Toolbar
             crumbs={[{ label: 'Pessoal' }, { label: module?.label ?? 'Página não encontrada' }]}
             scrolled={scrolled}
+            notice={notice}
+            onCopyLink={() => void copyLink()}
+            onSearch={() => setSpotlight(true)}
             sidebarVisible={sidebarVisible}
             onToggleSidebar={toggleSidebar}
             inspector={inspector ? { open: inspectorOpen, onToggle: toggleInspector } : undefined}
@@ -170,6 +266,10 @@ export function AppShell() {
         </div>
       </div>
 
+      <span role="status" className="sr-only">
+        {notice?.text}
+      </span>
+      <Spotlight open={spotlight} onOpenChange={setSpotlight} commands={commands} />
       <Sheet side="left" open={overlayOpen} onOpenChange={setOverlay} title="Navegação">
         <Sidebar
           mode="expanded"

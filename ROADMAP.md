@@ -10,8 +10,8 @@ Phases and scope are defined in `MASTER_PLAN.md` §38–39. This file tracks sta
 | P1   | Graphite Lime tokens (dark, light, materials, motion) + contrast check | Done   |
 | P2   | Application Shell + adaptive sidebar + module routes                   | Done   |
 | P3   | Contextual toolbar                                                     | Done   |
-| P4   | Spotlight Search (Ctrl/Cmd+K)                                          | Next   |
-| P5   | Control Center                                                         | —      |
+| P4   | Spotlight Search (Ctrl/Cmd+K)                                          | Done   |
+| P5   | Control Center                                                         | Next   |
 | P6   | Activity Shelf                                                         | —      |
 | P7   | Motion pass + reduced motion                                           | —      |
 | P8   | Accessibility, contrast and performance audit                          | —      |

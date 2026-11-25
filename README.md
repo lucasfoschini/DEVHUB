@@ -9,4 +9,4 @@ pnpm install
 pnpm dev
 ```
 
-Requires Node >= 22.12 and pnpm 9.15.9.
+Requires Node >= 22.18 and pnpm 9.15.9.

@@ -15,18 +15,20 @@ Operational rules for coding agents. Product spec: `MASTER_PLAN.md` (load only t
 pnpm install
 pnpm dev          # apps/web on Vite
 pnpm typecheck
+pnpm test         # design-token contrast gate
 pnpm lint
 pnpm build
 pnpm format
 ```
 
-A change is not done until `typecheck`, `lint`, `format:check` and `build` pass.
+A change is not done until `typecheck`, `lint`, `test`, `format:check` and `build` pass.
 
 ## Rules
 
 - Create an app or package only when it has a concrete consumer.
 - Do not add a dependency without checking version, license, and overlap with existing ones.
 - Glass materials only on the navigation/interaction layer. Data and technical content use solid surfaces.
+- Style only with token utilities (`bg-surface`, `text-secondary`…). No raw hex in components.
 - Simulated data lives in `apps/web/src/mocks` and is visibly labelled "Simulado" in the UI.
 - Never fake progress percentages, metrics, integrations, or test results.
 - No destructive git or remote operations without explicit user approval.
@@ -37,6 +39,7 @@ A change is not done until `typecheck`, `lint`, `format:check` and `build` pass.
 
 ```text
 apps/web/                    React + Vite app (shell + prototype)
+packages/design-tokens/      tokens.ts → dist/tokens.css (see docs/design/DESIGN_TOKENS.md)
 packages/typescript-config/  shared tsconfig presets
 docs/                        product, architecture, design, decisions, security
 references/                  prototypes and screenshots (read-only inputs)

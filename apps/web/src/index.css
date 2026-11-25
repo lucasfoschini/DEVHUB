@@ -1,0 +1,125 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/jetbrains-mono';
+@import '@devhub/design-tokens/tokens.css';
+
+/* Tailwind reads DevHub tokens only: default palette, fonts and breakpoints are cleared
+   so components cannot drift to raw colours. */
+@theme inline {
+  --color-*: initial;
+  --color-canvas: var(--dh-color-canvas);
+  --color-surface: var(--dh-color-surface);
+  --color-raised: var(--dh-color-raised);
+  --color-primary: var(--dh-color-text-primary);
+  --color-secondary: var(--dh-color-text-secondary);
+  --color-tertiary: var(--dh-color-text-tertiary);
+  --color-subtle: var(--dh-color-border-subtle);
+  --color-control: var(--dh-color-border-control);
+  --color-focus: var(--dh-color-focus);
+  --color-brand: var(--dh-color-brand);
+  --color-accent: var(--dh-color-accent-text);
+  --color-action: var(--dh-color-action-primary);
+  --color-action-hover: var(--dh-color-action-primary-hover);
+  --color-action-fg: var(--dh-color-action-primary-fg);
+  --color-hover: var(--dh-color-fill-hover);
+  --color-selected: var(--dh-color-fill-selected);
+  --color-success: var(--dh-color-success);
+  --color-warning: var(--dh-color-warning);
+  --color-error: var(--dh-color-error);
+  --color-info: var(--dh-color-info);
+  --color-neutral: var(--dh-color-neutral);
+  --color-pending: var(--dh-color-pending);
+  --color-offline: var(--dh-color-offline);
+  --color-degraded: var(--dh-color-degraded);
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --font-*: initial;
+  --font-sans: var(--dh-font-sans);
+  --font-mono: var(--dh-font-mono);
+
+  --text-*: initial;
+  --text-caption: var(--dh-text-caption-size);
+  --text-caption--line-height: var(--dh-text-caption-line);
+  --text-caption--letter-spacing: var(--dh-text-caption-tracking);
+  --text-caption--font-weight: var(--dh-text-caption-weight);
+  --text-footnote: var(--dh-text-footnote-size);
+  --text-footnote--line-height: var(--dh-text-footnote-line);
+  --text-body: var(--dh-text-body-size);
+  --text-body--line-height: var(--dh-text-body-line);
+  --text-callout: var(--dh-text-callout-size);
+  --text-callout--line-height: var(--dh-text-callout-line);
+  --text-callout--letter-spacing: var(--dh-text-callout-tracking);
+  --text-headline: var(--dh-text-headline-size);
+  --text-headline--line-height: var(--dh-text-headline-line);
+  --text-headline--letter-spacing: var(--dh-text-headline-tracking);
+  --text-headline--font-weight: var(--dh-text-headline-weight);
+  --text-title3: var(--dh-text-title3-size);
+  --text-title3--line-height: var(--dh-text-title3-line);
+  --text-title3--letter-spacing: var(--dh-text-title3-tracking);
+  --text-title3--font-weight: var(--dh-text-title3-weight);
+  --text-title2: var(--dh-text-title2-size);
+  --text-title2--line-height: var(--dh-text-title2-line);
+  --text-title2--letter-spacing: var(--dh-text-title2-tracking);
+  --text-title2--font-weight: var(--dh-text-title2-weight);
+  --text-title1: var(--dh-text-title1-size);
+  --text-title1--line-height: var(--dh-text-title1-line);
+  --text-title1--letter-spacing: var(--dh-text-title1-tracking);
+  --text-title1--font-weight: var(--dh-text-title1-weight);
+  --text-display: var(--dh-text-display-size);
+  --text-display--line-height: var(--dh-text-display-line);
+  --text-display--letter-spacing: var(--dh-text-display-tracking);
+  --text-display--font-weight: var(--dh-text-display-weight);
+
+  --radius-*: initial;
+  --radius-content: var(--dh-radius-content);
+  --radius-control: var(--dh-radius-control);
+  --radius-surface: var(--dh-radius-surface);
+  --radius-popover: var(--dh-radius-popover);
+  --radius-floating: var(--dh-radius-floating);
+  --radius-full: var(--dh-radius-pill);
+
+  --shadow-*: initial;
+  --shadow-navigation: var(--dh-elevation-navigation);
+  --shadow-inspector: var(--dh-elevation-inspector);
+  --shadow-overlay: var(--dh-elevation-overlay);
+  --shadow-modal: var(--dh-elevation-modal);
+
+  --ease-standard: var(--dh-ease-standard);
+  --ease-emphasized: var(--dh-ease-emphasized);
+  --ease-exit: var(--dh-ease-exit);
+
+  /* Must match breakpoints in @devhub/design-tokens (media queries cannot use var()). */
+  --breakpoint-*: initial;
+  --breakpoint-md: 600px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1440px;
+}
+
+@layer base {
+  html {
+    background: var(--dh-color-canvas);
+    color: var(--dh-color-text-primary);
+    font-family: var(--dh-font-sans);
+    font-size: var(--dh-text-body-size);
+    line-height: var(--dh-text-body-line);
+    -webkit-font-smoothing: antialiased;
+    transition:
+      background-color var(--dh-duration-normal) var(--dh-ease-standard),
+      color var(--dh-duration-normal) var(--dh-ease-standard);
+  }
+  :focus-visible {
+    outline: 2px solid var(--dh-color-focus);
+    outline-offset: 2px;
+  }
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--dh-font-mono);
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}

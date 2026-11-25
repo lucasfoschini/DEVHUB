@@ -1,0 +1,19 @@
+# Roadmap
+
+Phases and scope are defined in `MASTER_PLAN.md` §38–39. This file tracks status only.
+
+## Phase 0 — Prototype foundation
+
+| Step | Scope                                                                  | Status |
+| ---- | ---------------------------------------------------------------------- | ------ |
+| P0   | Monorepo, TS, lint, format, Vite app                                   | Done   |
+| P1   | Graphite Lime tokens (dark, light, materials, motion) + contrast check | Next   |
+| P2   | Application Shell + adaptive sidebar + module routes                   | —      |
+| P3   | Contextual toolbar                                                     | —      |
+| P4   | Spotlight Search (Ctrl/Cmd+K)                                          | —      |
+| P5   | Control Center                                                         | —      |
+| P6   | Activity Shelf                                                         | —      |
+| P7   | Motion pass + reduced motion                                           | —      |
+| P8   | Accessibility, contrast and performance audit                          | —      |
+
+Module screens start after P8, one at a time.

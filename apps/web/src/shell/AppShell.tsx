@@ -1,7 +1,16 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { Outlet, useLocation, useMatches, useNavigate } from 'react-router'
 import { Tooltip } from 'radix-ui'
-import { Layers, Link2, Monitor, Moon, PanelLeft, PanelRight, Sun } from 'lucide-react'
+import {
+  Layers,
+  Link2,
+  Monitor,
+  Moon,
+  PanelLeft,
+  PanelRight,
+  SlidersHorizontal,
+  Sun,
+} from 'lucide-react'
 import { modules, type ModuleDef } from '../nav'
 import { shortcut } from '../platform'
 import { oneOf, usePersistentState } from '../usePersistentState'
@@ -10,6 +19,7 @@ import { Sidebar } from './Sidebar'
 import { SIDEBAR, type DockedMode } from './sidebarSize'
 import { Sheet } from './Sheet'
 import { Spotlight, type SpotlightCommand } from './Spotlight'
+import { ControlCenter } from './ControlCenter'
 import { StatusBar } from './StatusBar'
 import { Toolbar } from './Toolbar'
 import { useTier } from './useTier'
@@ -71,6 +81,7 @@ export function AppShell() {
   const [resizing, setResizing] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [spotlight, setSpotlight] = useState(false)
+  const [controlCenter, setControlCenter] = useState(false)
   const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null)
 
   useEffect(() => {
@@ -153,6 +164,14 @@ export function AppShell() {
           },
         ]
       : []),
+    {
+      id: 'action:control-center',
+      label: 'Central de controle',
+      group: 'Ações',
+      icon: SlidersHorizontal,
+      keywords: ['control center', 'aparência', 'tema', 'material', 'local agent'],
+      perform: () => setControlCenter(true),
+    },
     {
       id: 'action:copy-link',
       label: 'Copiar link da página',
@@ -239,6 +258,16 @@ export function AppShell() {
             notice={notice}
             onCopyLink={() => void copyLink()}
             onSearch={() => setSpotlight(true)}
+            controlCenter={
+              <ControlCenter
+                open={controlCenter}
+                onOpenChange={setControlCenter}
+                theme={theme}
+                onThemeChange={setTheme}
+                material={material}
+                onMaterialChange={setMaterial}
+              />
+            }
             sidebarVisible={sidebarVisible}
             onToggleSidebar={toggleSidebar}
             inspector={inspector ? { open: inspectorOpen, onToggle: toggleInspector } : undefined}

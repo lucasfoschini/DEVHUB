@@ -57,15 +57,43 @@ function Query() {
   return useCommandState((state) => state.search)
 }
 
-function Recent(props: { commands: SpotlightCommand[]; onRun: (c: SpotlightCommand) => void }) {
+/** Empty query: Recentes + fixed groups. Typed query: one flat list, because cmdk ranks
+ *  items inside a group but keeps groups in render order, so a weak match in an earlier
+ *  group would outrank an exact match in a later one. */
+function Results(props: {
+  commands: SpotlightCommand[]
+  recent: SpotlightCommand[]
+  onRun: (c: SpotlightCommand) => void
+}) {
   const search = useCommandState((state) => state.search)
-  if (search !== '' || props.commands.length === 0) return null
+  if (search !== '') {
+    return (
+      <Command.Group heading="Resultados" className={groupClass}>
+        {props.commands.map((c) => (
+          <Item key={c.id} command={c} value={c.label} onRun={props.onRun} />
+        ))}
+      </Command.Group>
+    )
+  }
   return (
-    <Command.Group heading="Recentes" className={groupClass}>
-      {props.commands.map((c) => (
-        <Item key={c.id} command={c} value={`recente ${c.id}`} onRun={props.onRun} />
+    <>
+      {props.recent.length > 0 && (
+        <Command.Group heading="Recentes" className={groupClass}>
+          {props.recent.map((c) => (
+            <Item key={c.id} command={c} value={`recente ${c.id}`} onRun={props.onRun} />
+          ))}
+        </Command.Group>
+      )}
+      {GROUPS.map((g) => (
+        <Command.Group key={g} heading={g} className={groupClass}>
+          {props.commands
+            .filter((c) => c.group === g)
+            .map((c) => (
+              <Item key={c.id} command={c} value={c.label} onRun={props.onRun} />
+            ))}
+        </Command.Group>
       ))}
-    </Command.Group>
+    </>
   )
 }
 
@@ -126,16 +154,7 @@ export function Spotlight(props: {
                   existirem.
                 </p>
               </Command.Empty>
-              <Recent commands={recent} onRun={run} />
-              {GROUPS.map((g) => (
-                <Command.Group key={g} heading={g} className={groupClass}>
-                  {props.commands
-                    .filter((c) => c.group === g)
-                    .map((c) => (
-                      <Item key={c.id} command={c} value={c.label} onRun={run} />
-                    ))}
-                </Command.Group>
-              ))}
+              <Results commands={props.commands} recent={recent} onRun={run} />
             </Command.List>
             <div
               className="hidden items-center gap-4 border-t border-subtle px-4 py-2 text-caption text-secondary md:flex"

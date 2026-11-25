@@ -46,17 +46,33 @@ Tiers come from `breakpoints` in `@devhub/design-tokens` (`useTier`).
 - Below 560px of toolbar width (measured with ResizeObserver, not the window), back/forward move into the "Mais ações" menu and the trail shows only the current page.
 - "Mais ações" (Radix DropdownMenu, `elevated` material) always holds secondary actions. Today: "Copiar link da página", with a check icon and a `role="status"` announcement.
 - Scroll edge: the bottom separator appears only after the main content scrolls.
-- A search capsule opens Spotlight: field-like button with the shortcut on wide toolbars, icon only when narrow. P5 adds the Control Center trigger.
+- A search capsule opens Spotlight: field-like button with the shortcut on wide toolbars, icon only when narrow.
+- The Control Center trigger is the last button of the actions capsule.
 
 ## Spotlight (`shell/Spotlight.tsx`)
 
 - `Ctrl/⌘ + K` toggles it; the toolbar search button opens it. Built on cmdk inside a Radix Dialog (`elevated` material, `floating` radius, top 12vh).
-- Groups: Recentes (only with an empty query), Navegação (12 modules, matched by name and purpose), Ações (sidebar, inspector when the page has one, copy link), Aparência (theme and material, current choice checked).
+- Empty query: Recentes, Navegação (12 modules), Ações (sidebar, inspector when the page has one, Central de controle, copy link), Aparência (theme and material, current choice checked).
+- Typed query: one flat "Resultados" list ranked by cmdk's score. Groups are dropped while typing because cmdk ranks items inside a group but keeps groups in render order.
 - The query lives in cmdk, so every open starts empty and in the default order.
 - Recents: last 5 command ids in `localStorage` (`dh.spotlight.recent`). Ids that no longer resolve on the current page are skipped.
 - No match: says so, and that projects, repositories and documents join the search when those modules exist. Nothing is invented.
 - Focus: input on open; on close it returns to whatever opened it, unless navigation already moved focus to the new page title.
 - Commands are built in `AppShell` from real state. Destructive or remote operations must never be added as direct Spotlight commands without confirmation (MASTER_PLAN §21).
+
+## Control Center (`shell/ControlCenter.tsx`)
+
+Radix Popover from the toolbar (or the "Central de controle" Spotlight command), `elevated` material, 340px max. Tiles inside use a solid `hover` fill: no glass on glass. Only controls that work today:
+
+| Tile        | Controls                                                                                                                                         |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Aparência   | Tema: Sistema, Escuro, Claro (radio group)                                                                                                       |
+| Material    | Intensity: Translúcido, Equilibrado, Tonalizado. "Reduzir transparência" switch (on = `opaque`, off = the current intensity, chosen explicitly). |
+| Local Agent | Status only: "Indisponível na Web", arrives with the Desktop app (Phase 3)                                                                       |
+
+- With no stored choice, the switch reflects the OS (`prefers-reduced-transparency` or `prefers-contrast: more`, the same conditions `tokens.css` uses) and the note says so. Any manual choice shows a "Seguir o sistema" button that clears it.
+- The intensity control is disabled while transparency is reduced.
+- Not included until they exist: notifications, sync, Docker, monitoring, devices. Operations in progress arrive with the Activity Shelf (P6).
 
 ## Materials in the shell
 
@@ -74,7 +90,6 @@ Tiers come from `breakpoints` in `@devhub/design-tokens` (`useTier`).
 
 ## Not built yet
 
-- Control Center trigger (P5).
 - Searching projects, repositories, documents and integrations: each joins Spotlight with its module.
 - Module-specific toolbar actions: added with each module screen.
 - Enter/exit motion for sheets (P7).

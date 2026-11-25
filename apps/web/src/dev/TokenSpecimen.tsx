@@ -1,5 +1,8 @@
 // Token specimen at /dev/tokens: visual check for themes and materials (not in navigation).
 import { useMaterialPref, useThemePref, type MaterialPref, type ThemePref } from '../appearance'
+import { Segmented } from '../components/Segmented'
+
+const opts = <T extends string>(...values: T[]) => values.map((value) => ({ value, label: value }))
 
 const swatches = [
   ['canvas', 'bg-canvas'],
@@ -34,33 +37,6 @@ const type = [
 
 const materials = ['solid', 'subtle', 'regular', 'clear', 'tinted', 'elevated', 'opaque'] as const
 
-function Segmented<T extends string>(props: {
-  label: string
-  value: T
-  options: readonly T[]
-  onChange: (v: T) => void
-}) {
-  return (
-    <fieldset className="flex items-center gap-2">
-      <legend className="sr-only">{props.label}</legend>
-      <span className="text-footnote text-secondary">{props.label}</span>
-      <div className="flex gap-0.5 rounded-control border border-subtle bg-surface p-0.5">
-        {props.options.map((o) => (
-          <button
-            key={o}
-            type="button"
-            aria-pressed={props.value === o}
-            onClick={() => props.onChange(o)}
-            className="rounded-[6px] px-2.5 py-1 text-footnote text-secondary hover:bg-hover aria-pressed:bg-selected aria-pressed:text-primary"
-          >
-            {o}
-          </button>
-        ))}
-      </div>
-    </fieldset>
-  )
-}
-
 export function TokenSpecimen() {
   const [theme, setTheme] = useThemePref()
   const [material, setMaterial] = useMaterialPref()
@@ -70,19 +46,19 @@ export function TokenSpecimen() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-title1">Graphite Lime tokens</h1>
-          <p className="text-secondary">P1 specimen · replaced by the Application Shell in P2</p>
+          <p className="text-secondary">Visual check for tokens, themes and materials</p>
         </div>
         <div className="flex flex-wrap gap-4">
           <Segmented<ThemePref>
             label="Theme"
             value={theme}
-            options={['system', 'dark', 'light']}
+            options={opts<ThemePref>('system', 'dark', 'light')}
             onChange={setTheme}
           />
           <Segmented<MaterialPref>
             label="Material"
             value={material}
-            options={['system', 'clear', 'balanced', 'tinted', 'opaque']}
+            options={opts<MaterialPref>('system', 'clear', 'balanced', 'tinted', 'opaque')}
             onChange={setMaterial}
           />
         </div>

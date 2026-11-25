@@ -93,6 +93,8 @@ export function Toolbar(props: {
   notice: { ok: boolean } | null
   onCopyLink: () => void
   onSearch: () => void
+  /** Control Center trigger + popover, rendered last in the actions capsule. */
+  controlCenter: ReactNode
 }) {
   const [ref, width] = useWidth<HTMLElement>()
   const narrow = width < NARROW
@@ -228,6 +230,7 @@ export function Toolbar(props: {
             </DropdownMenu.Content>
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
+        {props.controlCenter}
       </Group>
     </header>
   )

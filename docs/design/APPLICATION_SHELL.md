@@ -74,6 +74,18 @@ Radix Popover from the toolbar (or the "Central de controle" Spotlight command),
 - The intensity control is disabled while transparency is reduced.
 - Not included until they exist: notifications, sync, Docker, monitoring, devices. Operations in progress arrive with the Activity Shelf (P6).
 
+## Activity Shelf (`shell/ActivityShelf.tsx`, `activity/store.ts`)
+
+- `activity` store: producers call `start` / `update` / `dismiss`; the shelf only renders. `progress` (0..1) is set only when the source reports it; otherwise the bar is indeterminate and no percentage is shown.
+- States: running, paused, completed, failed, cancelled (+ indeterminate when running without progress). Final states freeze the item, stamp `endedAt` and drop controls.
+- Completed and cancelled items leave after 8s. Failed items stay until removed.
+- Compact: a floating `elevated` pill at the bottom of the main column (main gets bottom padding while it is visible). One active item shows its title and % or elapsed time; several show a count. Failures are always visible in the pill.
+- Expanded: Radix Popover above the pill with one row per operation: status icon + label (never colour alone), project, step or error, % and elapsed time, progress bar, and the controls the source supports (Pausar/Retomar, Cancelar, Detalhes, Remover).
+- Start, completion, failure and cancellation are announced through a polite live region.
+- Keyboard: pause/resume is one toggle button, so focus survives. When Cancelar or Remover makes the control disappear, focus moves to the next control in the list, or to the main content.
+- Prototype data: `mocks/activitySimulator.ts` (Spotlight group "Demonstração": deploy with steps, indexing without progress, build that fails). Every simulated item carries a "Simulado" badge. No real service is called.
+- No camera cut-outs, fake status bars or Dynamic Island copy (MASTER_PLAN §23).
+
 ## Materials in the shell
 
 - Sidebar: `dh-material-regular` (functional layer).

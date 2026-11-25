@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { Outlet, useLocation, useMatches, useNavigate } from 'react-router'
 import { Tooltip } from 'radix-ui'
 import {
+  FlaskConical,
   Layers,
   Link2,
   Monitor,
@@ -20,6 +21,9 @@ import { SIDEBAR, type DockedMode } from './sidebarSize'
 import { Sheet } from './Sheet'
 import { Spotlight, type SpotlightCommand } from './Spotlight'
 import { ControlCenter } from './ControlCenter'
+import { ActivityShelf } from './ActivityShelf'
+import { useActivities } from '../activity/store'
+import { simulateDeploy, simulateFailedBuild, simulateIndexing } from '../mocks/activitySimulator'
 import { StatusBar } from './StatusBar'
 import { Toolbar } from './Toolbar'
 import { useTier } from './useTier'
@@ -82,6 +86,7 @@ export function AppShell() {
   const [scrolled, setScrolled] = useState(false)
   const [spotlight, setSpotlight] = useState(false)
   const [controlCenter, setControlCenter] = useState(false)
+  const hasActivity = useActivities().length > 0
   const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null)
 
   useEffect(() => {
@@ -180,6 +185,16 @@ export function AppShell() {
       keywords: ['url', 'compartilhar'],
       perform: () => void copyLink(),
     },
+    ...[
+      { id: 'demo:deploy', label: 'Simular deploy', perform: simulateDeploy },
+      { id: 'demo:index', label: 'Simular indexação (sem progresso)', perform: simulateIndexing },
+      { id: 'demo:failed', label: 'Simular build com falha', perform: simulateFailedBuild },
+    ].map((d) => ({
+      ...d,
+      group: 'Demonstração' as const,
+      icon: FlaskConical,
+      keywords: ['demo', 'teste', 'atividade', 'activity shelf'],
+    })),
     ...themeOptions.map((o) => ({
       id: `theme:${o.value}`,
       label: o.label,
@@ -273,15 +288,19 @@ export function AppShell() {
             inspector={inspector ? { open: inspectorOpen, onToggle: toggleInspector } : undefined}
           />
           <div className="flex min-h-0 flex-1">
-            <main
-              id="main"
-              ref={mainRef}
-              tabIndex={-1}
-              onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
-              className="min-w-0 flex-1 overflow-y-auto outline-none"
-            >
-              <Outlet />
-            </main>
+            <div className="relative flex min-w-0 flex-1">
+              <main
+                id="main"
+                ref={mainRef}
+                tabIndex={-1}
+                onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
+                // Room for the floating shelf so it never hides the end of the content.
+                className={`min-w-0 flex-1 overflow-y-auto outline-none ${hasActivity ? 'pb-16' : ''}`}
+              >
+                <Outlet />
+              </main>
+              <ActivityShelf />
+            </div>
             {inspector && inspectorDocked && inspectorOpen && (
               <aside
                 aria-label={inspector.title}

@@ -92,6 +92,17 @@
   --ease-emphasized: var(--dh-ease-emphasized);
   --ease-exit: var(--dh-ease-exit);
 
+  --animate-indeterminate: indeterminate 1.4s var(--dh-ease-standard) infinite;
+
+  @keyframes indeterminate {
+    from {
+      left: -35%;
+    }
+    to {
+      left: 100%;
+    }
+  }
+
   /* Must match breakpoints in @devhub/design-tokens (media queries cannot use var()). */
   --breakpoint-*: initial;
   --breakpoint-md: 600px;

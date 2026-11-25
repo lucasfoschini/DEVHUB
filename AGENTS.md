@@ -15,7 +15,7 @@ Operational rules for coding agents. Product spec: `MASTER_PLAN.md` (load only t
 pnpm install
 pnpm dev          # apps/web on Vite
 pnpm typecheck
-pnpm test         # design-token contrast gate
+pnpm test         # contrast gate + activity store tests
 pnpm lint
 pnpm build
 pnpm format

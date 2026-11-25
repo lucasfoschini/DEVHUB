@@ -1,12 +1,20 @@
-import { Command, useCommandState } from 'cmdk'
+import { Command, defaultFilter, useCommandState } from 'cmdk'
 import { Dialog } from 'radix-ui'
 import { ArrowUpDown, Check, CornerDownLeft, Search, type LucideIcon } from 'lucide-react'
 import { usePersistentState } from '../usePersistentState'
 import { useFocusReturn } from './useFocusReturn'
 
-export type CommandGroup = 'Navegação' | 'Ações' | 'Aparência'
-const GROUPS: CommandGroup[] = ['Navegação', 'Ações', 'Aparência']
+export type CommandGroup = 'Navegação' | 'Ações' | 'Aparência' | 'Demonstração'
+const GROUPS: CommandGroup[] = ['Navegação', 'Ações', 'Aparência', 'Demonstração']
 const MAX_RECENT = 5
+
+/** Label matches always outrank matches found only in keywords (e.g. a module purpose),
+ *  so "falha" finds "Simular build com falha" before "Visão geral" ("…está falhando"). */
+function filter(value: string, search: string, keywords?: string[]) {
+  const label = defaultFilter(value, search)
+  if (label > 0) return 0.5 + label / 2
+  return defaultFilter(value, search, keywords) / 2
+}
 
 export interface SpotlightCommand {
   /** Stable id, stored in the recent history. */
@@ -130,7 +138,7 @@ export function Spotlight(props: {
           className="dh-material-elevated fixed top-[12vh] left-1/2 z-(--dh-z-modal) w-[min(640px,calc(100vw-24px))] -translate-x-1/2 overflow-hidden rounded-floating outline-none"
         >
           <Dialog.Title className="sr-only">Buscar</Dialog.Title>
-          <Command label="Buscar comandos e módulos" loop>
+          <Command label="Buscar comandos e módulos" loop filter={filter}>
             <div className="flex items-center gap-3 border-b border-subtle px-4">
               <Search
                 size={18}

@@ -15,6 +15,8 @@ export interface ProbeOptions {
   timeoutMs: number
   /** Development and tests only (MONITOR_ALLOW_PRIVATE): skip the address check. */
   allowPrivate?: boolean
+  /** JSON body: sends a POST (webhooks) instead of a GET, and never follows redirects. */
+  body?: string
 }
 
 const MAX_REDIRECTS = 3
@@ -50,10 +52,14 @@ function once(url: URL, opts: ProbeOptions, signal: AbortSignal) {
     const req = client.request(
       url,
       {
-        method: 'GET',
+        method: opts.body === undefined ? 'GET' : 'POST',
         signal,
         lookup: guardedLookup(opts.allowPrivate ?? false),
-        headers: { 'user-agent': 'DevHub-Monitor/1', accept: '*/*' },
+        headers: {
+          'user-agent': 'DevHub-Monitor/1',
+          accept: '*/*',
+          ...(opts.body === undefined ? {} : { 'content-type': 'application/json' }),
+        },
       },
       (res) => {
         // Only the status line matters; never read the body (size and time stay bounded).
@@ -62,7 +68,7 @@ function once(url: URL, opts: ProbeOptions, signal: AbortSignal) {
       },
     )
     req.on('error', reject)
-    req.end()
+    req.end(opts.body)
   })
 }
 
@@ -89,7 +95,7 @@ export async function probe(rawUrl: string, opts: ProbeOptions): Promise<ProbeRe
     for (let hop = 0; ; hop++) {
       const res = await once(url, opts, signal)
       const isRedirect = res.status >= 300 && res.status < 400 && res.location
-      if (isRedirect && hop < MAX_REDIRECTS) {
+      if (isRedirect && hop < MAX_REDIRECTS && opts.body === undefined) {
         url = new URL(res.location!, url)
         const bad = urlProblem(url.href)
         if (bad) return { ok: false, statusCode: res.status, error: bad }

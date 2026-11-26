@@ -100,6 +100,8 @@
   --animate-fade-in: fade-in var(--dh-duration-normal) var(--dh-ease-standard);
   --animate-fade-out: fade-out var(--dh-duration-fast) var(--dh-ease-exit) forwards;
   --animate-pop-in: pop-in var(--dh-duration-normal) var(--dh-ease-emphasized);
+  /* Page content on route change and new list rows: a short rise, instant with reduced motion. */
+  --animate-rise-in: rise-in var(--dh-duration-slow) var(--dh-ease-emphasized) both;
   --animate-pop-out: pop-out var(--dh-duration-fast) var(--dh-ease-exit) forwards;
   --animate-sheet-left-in: sheet-left-in var(--dh-duration-slow) var(--dh-ease-emphasized);
   --animate-sheet-left-out: sheet-left-out var(--dh-duration-normal) var(--dh-ease-exit) forwards;
@@ -109,6 +111,12 @@
   @keyframes fade-in {
     from {
       opacity: 0;
+    }
+  }
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      translate: 0 6px;
     }
   }
   @keyframes fade-out {

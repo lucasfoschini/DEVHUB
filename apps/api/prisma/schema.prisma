@@ -97,6 +97,11 @@ model Workspace {
   integrations           Integration[]
   repositories           Repository[]
   notifications          Notification[]
+  secrets                Secret[]
+  servers                Server[]
+  notes                  Note[]
+  automations            Automation[]
+  prompts                Prompt[]
 
   @@map("workspace")
 }
@@ -154,6 +159,10 @@ model Project {
   updatedAt    DateTime            @updatedAt
   monitors     Monitor[]
   repositories ProjectRepository[]
+  secrets      Secret[]
+  servers      Server[]
+  notes        Note[]
+  prompts      Prompt[]
 
   @@unique([workspaceId, name])
   @@index([workspaceId, updatedAt])
@@ -318,4 +327,134 @@ model Notification {
   @@index([workspaceId, createdAt])
   @@index([workspaceId, readAt])
   @@map("notification")
+}
+
+/// Secrets Vault: one encrypted value per project, environment and name. The value never
+/// appears in lists, logs or audit metadata; reading it is an explicit, audited action.
+model Secret {
+  id             String    @id @default(uuid(7))
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// Environment variable style: [A-Z_][A-Z0-9_]*.
+  name           String
+  /// development | staging | production
+  environment    String
+  /// AES-256-GCM, same format as Integration.encryptedToken.
+  encryptedValue String
+  description    String    @default("")
+  createdById    String
+  lastRevealedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([projectId, environment, name])
+  @@index([workspaceId])
+  @@map("secret")
+}
+
+/// Infrastructure inventory entered by the user. No metrics are attached until an agent or
+/// provider integration reports them (Phase 4/5).
+model Server {
+  id          String    @id @default(uuid(7))
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  name        String
+  host        String
+  /// Free text: Hetzner, AWS, VPS, home lab…
+  provider    String    @default("")
+  environment String
+  notes       String    @default("")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, name])
+  @@index([projectId])
+  @@map("server")
+}
+
+/// Knowledge Base note in Markdown, optionally tied to a project.
+model Note {
+  id          String    @id @default(uuid(7))
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  title       String
+  body        String    @default("")
+  pinned      Boolean   @default(false)
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId, updatedAt])
+  @@index([projectId])
+  @@map("note")
+}
+
+/// "When <notification kind> happens, POST a webhook." Runs are queued in the same transaction
+/// as the notification (outbox) and delivered by a worker with the SSRF guard.
+model Automation {
+  id          String          @id @default(uuid(7))
+  workspaceId String
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  /// A notification kind (notifications/notify.ts).
+  trigger     String
+  /// Webhook URL (http/https, public address only).
+  url         String
+  /// generic (DevHub JSON) | slack | discord: body shape the receiver expects.
+  format      String          @default("generic")
+  enabled     Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  runs        AutomationRun[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId, trigger])
+  @@map("automation")
+}
+
+enum AutomationRunStatus {
+  pending
+  succeeded
+  failed
+}
+
+model AutomationRun {
+  id           String              @id @default(uuid(7))
+  automationId String
+  automation   Automation          @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  status       AutomationRunStatus @default(pending)
+  /// JSON body to send, fixed when the event happened.
+  payload      String
+  attempts     Int                 @default(0)
+  statusCode   Int?
+  error        String?
+  createdAt    DateTime            @default(now())
+  finishedAt   DateTime?
+
+  @@index([status, createdAt])
+  @@index([automationId, createdAt])
+  @@map("automation_run")
+}
+
+/// AI Center prompt library: reusable prompts with {{variables}}.
+model Prompt {
+  id          String    @id @default(uuid(7))
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  title       String
+  body        String
+  tags        String[]  @default([])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, title])
+  @@map("prompt")
 }

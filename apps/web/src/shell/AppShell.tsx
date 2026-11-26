@@ -309,7 +309,10 @@ export function AppShell() {
                 // Room for the floating shelf so it never hides the end of the content.
                 className={`min-w-0 flex-1 overflow-y-auto outline-none ${hasActivity ? 'pb-16' : ''}`}
               >
-                <Outlet />
+                {/* Keyed by route: each page rises in once on navigation (instant with reduced motion). */}
+                <div key={pathname} className="motion-safe:animate-rise-in">
+                  <Outlet />
+                </div>
               </main>
               <ActivityShelf />
             </div>

@@ -55,17 +55,22 @@ Packages created only when they gain a second consumer:
 
 Only entities the MVP (`MASTER_PLAN.md` §39) needs. All rows carry `createdAt`/`updatedAt` in UTC.
 
-| Entity                          | Purpose                                                                                          | Phase |
-| ------------------------------- | ------------------------------------------------------------------------------------------------ | ----- |
-| User, Session, Account          | Identity, revocable sessions, linked login providers                                             | 1     |
-| Workspace, Membership           | Isolation boundary; role `owner` only in the MVP                                                 | 1     |
-| AuditLog                        | Who did what, in which workspace; append-only                                                    | 1     |
-| Project                         | Unique name per workspace                                                                        | 2     |
-| Integration                     | Connected provider, granted scopes and the AES-256-GCM encrypted token (key in `ENCRYPTION_KEY`) | 2     |
-| Repository, ProjectRepository   | Imported repos (external id), many-to-many with projects                                         | 2     |
-| Monitor, MonitorCheck, Incident | HTTP checks and their history                                                                    | 2     |
-| Notification                    | In-app alerts, emitted only on state transitions (incident opened/resolved, token rejected)      | 2     |
-| ActivityEvent                   | Activity feed                                                                                    | 2     |
+| Entity                          | Purpose                                                                                            | Phase |
+| ------------------------------- | -------------------------------------------------------------------------------------------------- | ----- |
+| User, Session, Account          | Identity, revocable sessions, linked login providers                                               | 1     |
+| Workspace, Membership           | Isolation boundary; role `owner` only in the MVP                                                   | 1     |
+| AuditLog                        | Who did what, in which workspace; append-only                                                      | 1     |
+| Project                         | Unique name per workspace                                                                          | 2     |
+| Integration                     | Connected provider, granted scopes and the AES-256-GCM encrypted token (key in `ENCRYPTION_KEY`)   | 2     |
+| Repository, ProjectRepository   | Imported repos (external id), many-to-many with projects                                           | 2     |
+| Monitor, MonitorCheck, Incident | HTTP checks and their history                                                                      | 2     |
+| Notification                    | In-app alerts, emitted only on state transitions (incident opened/resolved, token rejected)        | 2     |
+| ActivityEvent                   | Activity feed                                                                                      | 2     |
+| Secret                          | Secrets Vault: AES-256-GCM value per project/environment/name; never listed, reveal is audited     | 2+    |
+| Server                          | Infrastructure inventory entered by the user (no metrics until the Local Agent)                    | 4     |
+| Note                            | Knowledge Base Markdown notes, optional project                                                    | 6     |
+| Prompt                          | AI Center prompt library with {{variables}}                                                        | 6     |
+| Automation, AutomationRun       | Event → webhook rules; runs queued in the notification transaction (outbox), delivered by a worker | 7     |
 
 Every workspace-owned table has `workspaceId` with a foreign key and an index, and queries filter by it. Row-level security in PostgreSQL is evaluated in Phase 9 (SaaS); until then there is one personal workspace per user.
 

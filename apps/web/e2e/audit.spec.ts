@@ -223,6 +223,109 @@ for (const theme of THEMES) {
           }),
         )
         await page.route('**/api/overview', (route) => route.fulfill({ json: OVERVIEW }))
+        const P = { id: PROJECT.id, name: PROJECT.name }
+        const T = '2026-11-25T10:00:00.000Z'
+        const mocks: Record<string, unknown> = {
+          '**/api/secrets': [
+            {
+              id: 's-1',
+              name: 'DATABASE_URL',
+              environment: 'production',
+              description: 'Banco principal',
+              lastRevealedAt: null,
+              updatedAt: T,
+              project: P,
+            },
+          ],
+          '**/api/servers': [
+            {
+              id: 'sv-1',
+              name: 'web-1',
+              host: '203.0.113.10',
+              provider: 'Hetzner',
+              environment: 'production',
+              notes: '',
+              project: P,
+            },
+          ],
+          '**/api/notes': [
+            { id: 'n-1', title: 'Runbook de deploy', pinned: true, updatedAt: T, project: P },
+          ],
+          '**/api/notes/n-1': {
+            id: 'n-1',
+            title: 'Runbook de deploy',
+            pinned: true,
+            updatedAt: T,
+            project: P,
+            body: '# Deploy\n\n1. Rodar `pnpm build`\n2. Conferir **monitores**\n\n```sh\npnpm deploy\n```',
+          },
+          '**/api/prompts': [
+            {
+              id: 'p-1',
+              title: 'Revisar PR',
+              body: 'Revise este diff: {{diff}}',
+              tags: ['review'],
+              updatedAt: T,
+              project: null,
+            },
+          ],
+          '**/api/automations': [
+            {
+              id: 'a-1',
+              name: 'Avisar no Slack',
+              trigger: 'monitor.down',
+              url: 'https://hooks.slack.com/services/x',
+              format: 'slack',
+              enabled: true,
+              runs: [{ status: 'succeeded', createdAt: T }],
+            },
+          ],
+          '**/api/deployments': {
+            connected: true,
+            pipelines: [
+              {
+                repository: { id: REPO.id, fullName: REPO.fullName },
+                error: null,
+                runs: [
+                  {
+                    id: 1,
+                    workflow: 'CI',
+                    title: 'Corrige login',
+                    branch: 'main',
+                    sha: 'abcdef1',
+                    event: 'push',
+                    status: 'completed',
+                    conclusion: 'success',
+                    url: 'https://github.com/auditoria/repositorio/actions/runs/1',
+                    createdAt: T,
+                    updatedAt: T,
+                  },
+                ],
+                deployments: [
+                  {
+                    id: 7,
+                    environment: 'production',
+                    ref: 'main',
+                    sha: 'abcdef1',
+                    createdAt: T,
+                    state: 'success',
+                  },
+                ],
+              },
+            ],
+          },
+          '**/api/analytics?*': {
+            days: 7,
+            daily: [
+              { day: new Date().toISOString().slice(0, 10), checks: 288, uptime: 0.99, p95: 180 },
+            ],
+            incidents: { opened: 1, resolved: 1, mttrSeconds: 420 },
+            monitors: [{ id: MONITOR.id, name: MONITOR.name, checks: 288, uptime: 0.99 }],
+          },
+        }
+        for (const [url, json] of Object.entries(mocks)) {
+          await page.route(url, (route) => route.fulfill({ json }))
+        }
         await page.route('**/api/notifications', (route) => route.fulfill({ json: NOTIFICATIONS }))
         await page.route('**/api/repositories', (route) => route.fulfill({ json: [REPO] }))
         await page.route(`**/api/projects/${PROJECT.id}/repositories`, (route) =>
@@ -283,6 +386,29 @@ for (const theme of THEMES) {
         await expect(page.getByText(REPO.fullName)).toBeVisible()
         await axe(page, 'git-connected')
         await shot(page, `${theme}-${material}-git-connected`)
+      })
+
+      test('module screens with data', async ({ page }) => {
+        const screens: [string, string][] = [
+          ['/deployments', 'Corrige login'],
+          ['/infrastructure', 'web-1'],
+          ['/ai', 'Revisar PR'],
+          ['/automations', 'Avisar no Slack'],
+          ['/secrets', 'DATABASE_URL'],
+          ['/analytics', 'Disponibilidade por dia'],
+        ]
+        for (const [path, text] of screens) {
+          await page.goto(path)
+          await expect(page.getByText(text).first()).toBeVisible()
+          await axe(page, path)
+          await expectGlassBudget(page, material)
+          await shot(page, `${theme}-${material}${path.replace('/', '-')}`)
+        }
+        await page.goto('/knowledge')
+        await page.getByRole('button', { name: /Runbook de deploy/ }).click()
+        await expect(page.getByRole('heading', { name: 'Deploy', exact: true })).toBeVisible()
+        await axe(page, 'knowledge-reader')
+        await shot(page, `${theme}-${material}-knowledge`)
       })
 
       test('settings', async ({ page }) => {

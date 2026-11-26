@@ -39,3 +39,18 @@ Phase 0 docs: architecture and feasibility (`docs/architecture/ARCHITECTURE.md`)
 | 2.5  | In-app notifications (monitor down/recovered, GitHub needs reconnect)               | Done   |
 | 2.6  | Command Center with real data (`/api/overview`: monitors, incidents, projects, Git) | Done   |
 | 2.7  | Settings: profile, password, sessions, notification preferences, integrations       | Done   |
+
+## Phases 3–9 — post-MVP (`MASTER_PLAN.md` §38)
+
+What exists in the web app and API, and what is still blocked. See `docs/decisions/0004-post-mvp-modules.md`.
+
+| Phase | Scope built                                                                                                    | Status                                          |
+| ----- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| 3     | Desktop (Tauri), native notifications, tray, local Git                                                         | Blocked: no Rust/MSVC toolchain on this machine |
+| 4     | Deployments (GitHub Actions runs + Deployments, read-only), Infrastructure inventory (servers per environment) | Partial: no deploy provider, no server metrics  |
+| 5     | Local Agent (pairing, capabilities, remote operations)                                                         | Blocked: depends on Phase 3                     |
+| 6     | AI Center prompt library with variables; Knowledge Base (Markdown notes, search, pin)                          | Partial: no model execution, no Obsidian sync   |
+| 7     | Automations: event → webhook (generic, Slack, Discord), outbox queue, 3 retries, history, inline test delivery | Partial: no workflow editor, no CLI             |
+| 2+    | Secrets Vault (AES-256-GCM, audited reveal, rotation); Analytics (uptime, P95, incidents, MTTR over 7/30 days) | Done                                            |
+| 8     | Mobile (Expo)                                                                                                  | Not started                                     |
+| 9     | SaaS (teams, invites, RBAC, billing)                                                                           | Not started                                     |

@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "node --test src/activity/store.test.ts",
+    "test": "node --test src/activity/store.test.ts src/knowledge/markdown.test.ts",
     "test:e2e": "vite build && playwright test"
   },
   "dependencies": {

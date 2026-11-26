@@ -15,6 +15,14 @@ import { NotificationsController } from './notifications/notifications.controlle
 import { NotificationsService } from './notifications/notifications.service.js'
 import { OverviewController } from './overview/overview.controller.js'
 import { OverviewService } from './overview/overview.service.js'
+import { AnalyticsController, AnalyticsService } from './analytics/analytics.js'
+import { AutomationsController, AutomationsService } from './automations/automations.js'
+import { DeploymentsController, DeploymentsService } from './deployments/deployments.js'
+import { NotesController, NotesService } from './notes/notes.js'
+import { PromptsController, PromptsService } from './prompts/prompts.js'
+import { SecretsController } from './secrets/secrets.controller.js'
+import { SecretsService } from './secrets/secrets.service.js'
+import { ServersController, ServersService } from './servers/servers.js'
 import { PrismaService } from './prisma.service.js'
 import { ProjectsController } from './projects/projects.controller.js'
 import { ProjectsService } from './projects/projects.service.js'
@@ -33,6 +41,13 @@ export { ENV }
     RepositoriesController,
     NotificationsController,
     OverviewController,
+    SecretsController,
+    ServersController,
+    NotesController,
+    PromptsController,
+    AutomationsController,
+    DeploymentsController,
+    AnalyticsController,
   ],
   providers: [
     { provide: ENV, useFactory: () => loadEnv() },
@@ -56,6 +71,13 @@ export { ENV }
     RepositoriesService,
     NotificationsService,
     OverviewService,
+    SecretsService,
+    ServersService,
+    NotesService,
+    PromptsService,
+    AutomationsService,
+    DeploymentsService,
+    AnalyticsService,
   ],
 })
 export class AppModule {}

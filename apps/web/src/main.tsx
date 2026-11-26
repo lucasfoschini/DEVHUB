@@ -13,6 +13,13 @@ import { MonitorDetail } from './monitors/MonitorDetail'
 import { GitCenterPage } from './git/GitCenterPage'
 import { OverviewPage } from './overview/OverviewPage'
 import { SettingsPage } from './settings/SettingsPage'
+import { AiCenterPage } from './ai/AiCenterPage'
+import { AnalyticsPage } from './analytics/AnalyticsPage'
+import { AutomationsPage } from './automations/AutomationsPage'
+import { DeploymentsPage } from './deployments/DeploymentsPage'
+import { InfrastructurePage } from './infrastructure/InfrastructurePage'
+import { KnowledgePage } from './knowledge/KnowledgePage'
+import { SecretsPage } from './secrets/SecretsPage'
 import './index.css'
 
 /** Modules with a built screen; the rest show the roadmap empty state. */
@@ -22,6 +29,13 @@ const screens: Record<string, ReactNode> = {
   '/observability': <MonitorsPage />,
   '/git': <GitCenterPage />,
   '/settings': <SettingsPage />,
+  '/deployments': <DeploymentsPage />,
+  '/infrastructure': <InfrastructurePage />,
+  '/ai': <AiCenterPage />,
+  '/knowledge': <KnowledgePage />,
+  '/automations': <AutomationsPage />,
+  '/secrets': <SecretsPage />,
+  '/analytics': <AnalyticsPage />,
 }
 const moduleAt = (path: string) => modules.find((x) => x.path === path)
 

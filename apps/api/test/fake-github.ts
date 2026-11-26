@@ -54,6 +54,44 @@ export const fakeGithub = createServer(async (req, res) => {
     if (!authed) return json(401, {})
     return json(200, new URL(req.url, 'http://x').searchParams.get('page') === '1' ? REPOS : [])
   }
+  if (req.method === 'GET' && req.url?.startsWith('/repos/octo/private-api/actions/runs?')) {
+    if (!authed) return json(401, {})
+    return json(200, {
+      workflow_runs: [
+        {
+          id: 9001,
+          name: 'CI',
+          display_title: 'Fix login',
+          head_branch: 'main',
+          head_sha: 'abcdef1234567',
+          event: 'push',
+          status: 'completed',
+          conclusion: 'success',
+          html_url: 'https://github.com/octo/private-api/actions/runs/9001',
+          created_at: '2026-11-25T10:00:00Z',
+          updated_at: '2026-11-25T10:03:00Z',
+        },
+      ],
+    })
+  }
+  if (req.method === 'GET' && req.url?.startsWith('/repos/octo/private-api/deployments?')) {
+    if (!authed) return json(401, {})
+    return json(200, [
+      {
+        id: 77,
+        environment: 'production',
+        ref: 'main',
+        sha: 'abcdef1234567',
+        created_at: '2026-11-25T10:05:00Z',
+      },
+    ])
+  }
+  if (
+    req.method === 'GET' &&
+    req.url?.startsWith('/repos/octo/private-api/deployments/77/statuses')
+  ) {
+    return json(200, [{ state: 'success', created_at: '2026-11-25T10:06:00Z' }])
+  }
   const byId = /^\/repositories\/(\d+)$/.exec(req.url ?? '')
   if (req.method === 'GET' && byId) {
     if (!authed) return json(401, {})

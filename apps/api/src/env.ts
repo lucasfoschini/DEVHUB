@@ -17,6 +17,9 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env) {
     webOrigin,
     port,
     allowPrivateMonitors,
+    /** AES-256 key for stored credentials (integration tokens, Secrets Vault). Optional: features
+     *  that need it answer 503 without it. */
+    encryptionKey: source.ENCRYPTION_KEY ? parseKey(source.ENCRYPTION_KEY) : null,
     github: loadGithub(source, webOrigin),
   }
 }

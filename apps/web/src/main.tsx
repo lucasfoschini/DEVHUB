@@ -5,6 +5,7 @@ import { modules } from './nav'
 import { AppShell, type RouteHandle } from './shell/AppShell'
 import { ModulePage, NotFound } from './shell/ModulePage'
 import { TokenSpecimen } from './dev/TokenSpecimen'
+import { SessionGate } from './SessionGate'
 import './index.css'
 
 const moduleRoutes: RouteObject[] = modules.map((m) => {
@@ -18,7 +19,11 @@ const moduleRoutes: RouteObject[] = modules.map((m) => {
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <AppShell />,
+    element: (
+      <SessionGate>
+        <AppShell />
+      </SessionGate>
+    ),
     children: [...moduleRoutes, { path: '*', element: <NotFound /> }],
   },
   { path: '/dev/tokens', element: <TokenSpecimen /> },

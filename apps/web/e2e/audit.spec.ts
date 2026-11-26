@@ -10,6 +10,10 @@ const MATERIALS = ['balanced', 'clear', 'opaque'] as const
 /** Glass surfaces allowed on screen at once: 4 shell chrome (sidebar + 3 toolbar groups),
  *  the Activity Shelf pill and 1 overlay. See docs/design/UX_AUDIT.md. */
 const MAX_GLASS = 6
+const ME = {
+  user: { id: 'u1', name: 'Auditoria', email: 'audit@devhub.test' },
+  workspace: { id: 'w1', name: 'Pessoal', role: 'owner' },
+}
 
 async function axe(page: Page, label: string) {
   const { violations } = await new AxeBuilder({ page })
@@ -59,6 +63,8 @@ for (const theme of THEMES) {
           },
           { t: theme, m: material },
         )
+        // The audit covers the UI, not the API: a fixed signed-in session.
+        await page.route('**/api/me', (route) => route.fulfill({ json: ME }))
       })
 
       test('module routes', async ({ page }) => {
@@ -74,6 +80,8 @@ for (const theme of THEMES) {
 
       test('overlays', async ({ page }) => {
         await page.goto('/')
+        // The shell mounts after /api/me resolves; its shortcuts are not bound before.
+        await expect(page.getByRole('button', { name: 'Central de controle' })).toBeVisible()
 
         await page.keyboard.press('Control+k')
         await expect(page.getByRole('dialog')).toBeVisible()
@@ -97,6 +105,16 @@ for (const theme of THEMES) {
         await expectGlassBudget(page, material)
         await shot(page, `${theme}-${material}-activity-shelf`)
         await page.keyboard.press('Escape')
+      })
+
+      test('sign-in screen', async ({ page }) => {
+        await page.route('**/api/me', (route) => route.fulfill({ status: 401, json: {} }))
+        await page.goto('/')
+        await expect(page.getByRole('heading', { name: 'Entrar no DevHub' })).toBeVisible()
+        await axe(page, 'sign-in')
+        await shot(page, `${theme}-${material}-sign-in`)
+        await page.getByRole('button', { name: 'Criar uma conta' }).click()
+        await axe(page, 'sign-up')
       })
 
       test('narrow window sheet', async ({ page }) => {

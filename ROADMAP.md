@@ -18,6 +18,14 @@ Phases and scope are defined in `MASTER_PLAN.md` §38–39. This file tracks sta
 
 Phase 0 docs: architecture and feasibility (`docs/architecture/ARCHITECTURE.md`), threat model (`docs/security/THREAT_MODEL.md`).
 
-## Phase 1 — Foundation (next)
+## Phase 1 — Foundation
 
-API (NestJS), PostgreSQL + Prisma, authentication, workspace, CI. Starts with an ADR choosing the auth library. Module screens are Phase 2 (MVP).
+| Step | Scope                                                                         | Status                       |
+| ---- | ----------------------------------------------------------------------------- | ---------------------------- |
+| 1.1  | Auth library ADR (`docs/decisions/0003-auth-better-auth.md`)                  | Done                         |
+| 1.2  | `apps/api` (NestJS), PostgreSQL via Docker Compose, Prisma schema + migration | Done                         |
+| 1.3  | Email/password auth, sessions, personal workspace, audit log                  | Done                         |
+| 1.4  | Web sign-in, session gate, sign-out                                           | Done                         |
+| 1.5  | CI (GitHub Actions): checks, API integration, web audit                       | Done (not yet run on GitHub) |
+
+Module screens are Phase 2 (MVP).

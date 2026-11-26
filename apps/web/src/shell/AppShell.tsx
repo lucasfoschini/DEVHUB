@@ -5,6 +5,7 @@ import {
   FlaskConical,
   Layers,
   Link2,
+  LogOut,
   Monitor,
   Moon,
   PanelLeft,
@@ -27,6 +28,7 @@ import { simulateDeploy, simulateFailedBuild, simulateIndexing } from '../mocks/
 import { StatusBar } from './StatusBar'
 import { Toolbar } from './Toolbar'
 import { useTier } from './useTier'
+import { useSession } from '../session'
 
 export interface RouteHandle {
   module?: ModuleDef
@@ -61,6 +63,7 @@ export function AppShell() {
   const [theme, setTheme] = useThemePref()
   const [material, setMaterial] = useMaterialPref()
   const navigate = useNavigate()
+  const { signOut } = useSession()
   const tier = useTier()
   const { pathname } = useLocation()
   const module = (useMatches().at(-1)?.handle as RouteHandle | undefined)?.module
@@ -178,6 +181,14 @@ export function AppShell() {
       perform: () => setControlCenter(true),
     },
     {
+      id: 'action:sign-out',
+      label: 'Sair',
+      group: 'Ações',
+      icon: LogOut,
+      keywords: ['logout', 'sign out', 'sessão'],
+      perform: () => void signOut(),
+    },
+    {
       id: 'action:copy-link',
       label: 'Copiar link da página',
       group: 'Ações',
@@ -272,6 +283,7 @@ export function AppShell() {
             scrolled={scrolled}
             notice={notice}
             onCopyLink={() => void copyLink()}
+            onSignOut={() => void signOut()}
             onSearch={() => setSpotlight(true)}
             controlCenter={
               <ControlCenter

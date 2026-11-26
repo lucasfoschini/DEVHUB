@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Ellipsis,
   Link2,
+  LogOut,
   PanelLeft,
   PanelRight,
   Search,
@@ -92,6 +93,7 @@ export function Toolbar(props: {
   /** Shown as a check on the menu button after copy-link; announced by the shell. */
   notice: { ok: boolean } | null
   onCopyLink: () => void
+  onSignOut: () => void
   onSearch: () => void
   /** Control Center trigger + popover, rendered last in the actions capsule. */
   controlCenter: ReactNode
@@ -226,6 +228,10 @@ export function Toolbar(props: {
               )}
               <DropdownMenu.Item className={menuItem} onSelect={props.onCopyLink}>
                 <Link2 size={16} aria-hidden /> Copiar link da página
+              </DropdownMenu.Item>
+              <DropdownMenu.Separator className="mx-1 my-1 h-px bg-subtle" />
+              <DropdownMenu.Item className={menuItem} onSelect={props.onSignOut}>
+                <LogOut size={16} aria-hidden /> Sair
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Portal>

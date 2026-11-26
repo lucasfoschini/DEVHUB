@@ -2,15 +2,17 @@
 
 Baseline decisions are in `MASTER_PLAN.md` §03–§10. This document states what exists, what Phase 1 adds, the boundaries between parts, and the feasibility risks. Security analysis is in `docs/security/THREAT_MODEL.md`.
 
-## Current state (end of Phase 0, 2026-11-26)
+## Current state (Phase 1 in progress, 2026-11-26)
 
-| Part                         | Status                                                                                      |
-| ---------------------------- | ------------------------------------------------------------------------------------------- |
-| `apps/web`                   | React + Vite shell prototype. No backend; all data is simulated (`src/mocks`) and labelled. |
-| `packages/design-tokens`     | Tokens → `tokens.css`, contrast gate in `pnpm test`.                                        |
-| `packages/typescript-config` | Shared tsconfig presets.                                                                    |
-| API, database, auth, CI      | Not created.                                                                                |
-| Desktop, agent, mobile, CLI  | Not created (Phases 3, 5, 8, 7).                                                            |
+| Part                         | Status                                                                                             |
+| ---------------------------- | -------------------------------------------------------------------------------------------------- |
+| `apps/web`                   | Shell prototype behind sign-in. Module data is still simulated (`src/mocks`) and labelled.         |
+| `apps/api`                   | NestJS: Better Auth (email/password), `/api/me` with personal workspace, `/api/health`, audit log. |
+| `packages/design-tokens`     | Tokens → `tokens.css`, contrast gate in `pnpm test`.                                               |
+| `packages/typescript-config` | Shared tsconfig presets.                                                                           |
+| Database                     | PostgreSQL 18 via `docker-compose.yml` (127.0.0.1:5433), Prisma migrations in `apps/api/prisma`.   |
+| CI                           | `.github/workflows/ci.yml`: checks, API integration against Postgres, web audit.                   |
+| Desktop, agent, mobile, CLI  | Not created (Phases 3, 5, 8, 7).                                                                   |
 
 ## Target for Phase 1 (Foundation)
 

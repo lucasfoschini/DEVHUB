@@ -7,15 +7,20 @@ Operational rules for coding agents. Product spec: `MASTER_PLAN.md` (load only t
 - pnpm 9.15.9 workspaces + Turborepo 2.11
 - TypeScript 6.0.3 (not 7.x: typescript-eslint supports `<6.1`)
 - Web: React 19.3 + Vite 8 + React Router 7 + Tailwind 4 + radix-ui + cmdk + lucide-react (`apps/web`)
-- Planned, not yet created: NestJS API, Prisma 7.10.1 + PostgreSQL, Tauri 2 desktop (Phase 3), Expo (Phase 8)
+- API: NestJS 12 (ESM, built with `tsc`; `@nestjs/cli` needs a newer Node) + Prisma 7.10.1 + PostgreSQL 18 + Better Auth 1.7 (`apps/api`, ADR 0003)
+- Planned, not yet created: Tauri 2 desktop (Phase 3), Expo (Phase 8)
 
 ## Commands (run at repo root)
 
 ```bash
 pnpm install
-pnpm dev          # apps/web on Vite
+docker compose up -d                    # PostgreSQL on 127.0.0.1:5433
+cp apps/api/.env.example apps/api/.env  # then set BETTER_AUTH_SECRET
+pnpm --filter @devhub/api db:migrate    # apply migrations
+pnpm dev          # web on :5173 (proxies /api) + API on :3000
 pnpm typecheck
-pnpm test         # contrast gate + activity store tests
+pnpm test         # contrast gate, activity store, API unit tests
+pnpm --filter @devhub/api test:int     # API against the real database
 pnpm --filter @devhub/web test:e2e   # P8 audit: axe, glass budget, screenshots (installed Chrome)
 pnpm lint
 pnpm build
@@ -35,10 +40,13 @@ A change is not done until `typecheck`, `lint`, `test`, `format:check` and `buil
 - No destructive git or remote operations without explicit user approval.
 - Do not copy Apple assets (SF Pro, SF Symbols, window chrome). Use Geist, JetBrains Mono, Lucide.
 - Record architecture changes as an ADR in `docs/decisions/`.
+- Every workspace-owned query filters by the session's workspace on the server (THREAT_MODEL.md).
+- Schema changes go through `prisma migrate dev`; never edit an applied migration.
 
 ## Layout
 
 ```text
+apps/api/                    NestJS API: auth, workspaces, audit (prisma/ holds schema + migrations)
 apps/web/                    React + Vite app (shell + prototype)
   src/shell/                 Application Shell (see docs/design/APPLICATION_SHELL.md)
   src/nav.ts                 module list, groups, roadmap phase per module

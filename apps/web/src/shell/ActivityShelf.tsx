@@ -245,7 +245,7 @@ export function ActivityShelf() {
               sideOffset={8}
               collisionPadding={8}
               aria-label="Atividades"
-              className="dh-material-elevated z-(--dh-z-popover) w-[min(400px,calc(100vw-16px))] rounded-floating p-2 outline-none"
+              className="dh-material-elevated z-(--dh-z-popover) w-[min(400px,calc(100vw-16px))] rounded-floating p-2 outline-none origin-(--radix-popover-content-transform-origin) data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in"
             >
               <h2 className="px-1.5 pt-1 pb-2 text-footnote font-semibold">Atividades</h2>
               <ul className="max-h-[60vh] space-y-1.5 overflow-y-auto">

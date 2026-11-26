@@ -13,7 +13,7 @@ Phases and scope are defined in `MASTER_PLAN.md` §38–39. This file tracks sta
 | P4   | Spotlight Search (Ctrl/Cmd+K)                                          | Done   |
 | P5   | Control Center                                                         | Done   |
 | P6   | Activity Shelf                                                         | Done   |
-| P7   | Motion pass + reduced motion                                           | Next   |
-| P8   | Accessibility, contrast and performance audit                          | —      |
+| P7   | Motion pass + reduced motion                                           | Done   |
+| P8   | Accessibility, contrast and performance audit                          | Next   |
 
 Module screens start after P8, one at a time.

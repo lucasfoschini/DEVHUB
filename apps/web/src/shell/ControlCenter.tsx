@@ -48,7 +48,7 @@ export function ControlCenter(props: {
           sideOffset={8}
           collisionPadding={8}
           aria-label="Central de controle"
-          className="dh-material-elevated z-(--dh-z-popover) flex w-[min(340px,calc(100vw-16px))] flex-col gap-2 rounded-floating p-2 outline-none"
+          className="dh-material-elevated z-(--dh-z-popover) flex w-[min(340px,calc(100vw-16px))] flex-col gap-2 rounded-floating p-2 outline-none origin-(--radix-popover-content-transform-origin) data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in"
         >
           <Tile title="Aparência">
             <Segmented<ThemePref>

@@ -127,7 +127,7 @@ export function Spotlight(props: {
   return (
     <Dialog.Root open={props.open} onOpenChange={props.onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-(--dh-z-modal) bg-scrim" />
+        <Dialog.Overlay className="fixed inset-0 z-(--dh-z-modal) bg-scrim data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in" />
         <Dialog.Content
           ref={content}
           aria-describedby={undefined}
@@ -135,7 +135,7 @@ export function Spotlight(props: {
             remember()
           }}
           onCloseAutoFocus={onCloseAutoFocus}
-          className="dh-material-elevated fixed top-[12vh] left-1/2 z-(--dh-z-modal) w-[min(640px,calc(100vw-24px))] -translate-x-1/2 overflow-hidden rounded-floating outline-none"
+          className="dh-material-elevated fixed top-[12vh] left-1/2 z-(--dh-z-modal) w-[min(640px,calc(100vw-24px))] -translate-x-1/2 overflow-hidden rounded-floating outline-none data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in"
         >
           <Dialog.Title className="sr-only">Buscar</Dialog.Title>
           <Command label="Buscar comandos e módulos" loop filter={filter}>

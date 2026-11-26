@@ -100,10 +100,17 @@ Radix Popover from the toolbar (or the "Central de controle" Spotlight command),
 - Modules without a screen show an empty state with the roadmap phase from `MASTER_PLAN.md` §38. Nothing is simulated.
 - `/dev/tokens` is a token specimen page outside the shell.
 
+## Motion
+
+- Overlays animate with CSS keyframes driven by Radix `data-state` (`--animate-*` in `apps/web/src/index.css`). Radix keeps closed content mounted until the exit animation ends.
+- Spotlight, Control Center and Activity Shelf: fade + scale from 0.96 (popovers grow from their trigger via `--radix-popover-content-transform-origin`). Sheets slide in from their edge. Scrims fade.
+- Enter uses `ease-emphasized`; exit is shorter and uses `ease-exit`. Exits have their own `to` keyframes, because `reverse` would also flip the easing curve.
+- Sidebar width (docked) and theme colours use CSS transitions with the same tokens.
+- `prefers-reduced-motion: reduce` sets every `--dh-duration-*` to 1ms, so all of the above become instant. Spinners and the indeterminate bar use `motion-safe:`/`motion-reduce:`.
+
 ## Not built yet
 
 - Searching projects, repositories, documents and integrations: each joins Spotlight with its module.
 - Module-specific toolbar actions: added with each module screen.
-- Enter/exit motion for sheets (P7).
 - A workspace selector: there is only one personal workspace, so the sidebar shows a static label.
 - A mobile bottom tab bar: native mobile is the Expo app (Phase 8). The web uses the overlay sidebar on phones.

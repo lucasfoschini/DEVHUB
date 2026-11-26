@@ -94,6 +94,62 @@
 
   --animate-indeterminate: indeterminate 1.4s var(--dh-ease-standard) infinite;
 
+  /* Overlay enter/exit. Radix keeps closed content mounted until the exit animation ends.
+     Reduced motion shortens every --dh-duration-* to 1ms, so these become instant.
+     Exits have their own `to` keyframes: `reverse` would also flip the easing curve. */
+  --animate-fade-in: fade-in var(--dh-duration-normal) var(--dh-ease-standard);
+  --animate-fade-out: fade-out var(--dh-duration-fast) var(--dh-ease-exit) forwards;
+  --animate-pop-in: pop-in var(--dh-duration-normal) var(--dh-ease-emphasized);
+  --animate-pop-out: pop-out var(--dh-duration-fast) var(--dh-ease-exit) forwards;
+  --animate-sheet-left-in: sheet-left-in var(--dh-duration-slow) var(--dh-ease-emphasized);
+  --animate-sheet-left-out: sheet-left-out var(--dh-duration-normal) var(--dh-ease-exit) forwards;
+  --animate-sheet-right-in: sheet-right-in var(--dh-duration-slow) var(--dh-ease-emphasized);
+  --animate-sheet-right-out: sheet-right-out var(--dh-duration-normal) var(--dh-ease-exit) forwards;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  /* `scale`/`translate` properties, not `transform`, so they compose with translate utilities. */
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+  @keyframes pop-out {
+    to {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+  @keyframes sheet-left-in {
+    from {
+      translate: calc(-100% - 8px) 0;
+    }
+  }
+  @keyframes sheet-left-out {
+    to {
+      translate: calc(-100% - 8px) 0;
+    }
+  }
+  @keyframes sheet-right-in {
+    from {
+      translate: calc(100% + 8px) 0;
+    }
+  }
+  @keyframes sheet-right-out {
+    to {
+      translate: calc(100% + 8px) 0;
+    }
+  }
+
   @keyframes indeterminate {
     from {
       left: -35%;

@@ -178,12 +178,6 @@ export const motion = {
     emphasized: 'cubic-bezier(0.3, 0, 0, 1.0)',
     exit: 'cubic-bezier(0.4, 0, 1, 1)',
   },
-  /** For the `motion` library (P7). Low bounce on purpose. */
-  spring: {
-    snappy: { type: 'spring', stiffness: 520, damping: 40, mass: 1 },
-    smooth: { type: 'spring', stiffness: 300, damping: 34, mass: 1 },
-    gentle: { type: 'spring', stiffness: 180, damping: 26, mass: 1 },
-  },
 } as const
 
 export const elevation = {

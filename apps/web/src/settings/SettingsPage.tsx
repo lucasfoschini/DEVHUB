@@ -2,6 +2,7 @@ import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'reac
 import { Link } from 'react-router'
 import { Switch } from 'radix-ui'
 import { inputClass, primaryButton, secondaryButton } from '../components/formStyles'
+import { ProviderKeys } from '../providers/ProviderPanels'
 import { request, useSession } from '../session'
 
 interface SessionRow {
@@ -18,7 +19,7 @@ const KIND_LABEL: Record<string, { label: string; hint: string }> = {
   'monitor.recovered': { label: 'Monitor recuperado', hint: 'Quando o incidente é resolvido.' },
   'integration.needs_reconnect': {
     label: 'Integração desconectada',
-    hint: 'Quando o GitHub recusa o token salvo.',
+    hint: 'Quando GitHub, Render, Vercel ou Neon recusa a chave salva.',
   },
 }
 
@@ -338,23 +339,26 @@ function Integrations() {
   }, [])
 
   return (
-    <div className="flex items-center gap-3">
-      <span className="min-w-0 flex-1 text-body">
-        GitHub{' '}
-        <span className="text-secondary">
-          {github === null
-            ? '…'
-            : github === 'off'
-              ? 'não conectado'
-              : github.status === 'connected'
-                ? `conectado como @${github.externalLogin}`
-                : `precisa reconectar (@${github.externalLogin})`}
+    <>
+      <div className="flex items-center gap-3">
+        <span className="min-w-0 flex-1 text-body">
+          GitHub{' '}
+          <span className="text-secondary">
+            {github === null
+              ? '…'
+              : github === 'off'
+                ? 'não conectado'
+                : github.status === 'connected'
+                  ? `conectado como @${github.externalLogin}`
+                  : `precisa reconectar (@${github.externalLogin})`}
+          </span>
         </span>
-      </span>
-      <Link to="/git" className="text-footnote text-secondary underline hover:text-primary">
-        Gerenciar no Git Center
-      </Link>
-    </div>
+        <Link to="/git" className="text-footnote text-secondary underline hover:text-primary">
+          Gerenciar no Git Center
+        </Link>
+      </div>
+      <ProviderKeys />
+    </>
   )
 }
 

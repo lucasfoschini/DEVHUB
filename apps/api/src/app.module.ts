@@ -24,6 +24,7 @@ import { SecretsController } from './secrets/secrets.controller.js'
 import { SecretsService } from './secrets/secrets.service.js'
 import { ServersController, ServersService } from './servers/servers.js'
 import { PrismaService } from './prisma.service.js'
+import { ProvidersController, ProvidersService } from './providers/providers.js'
 import { ProjectsController } from './projects/projects.controller.js'
 import { ProjectsService } from './projects/projects.service.js'
 import { MeController } from './workspaces/me.controller.js'
@@ -48,6 +49,7 @@ export { ENV }
     AutomationsController,
     DeploymentsController,
     AnalyticsController,
+    ProvidersController,
   ],
   providers: [
     { provide: ENV, useFactory: () => loadEnv() },
@@ -78,6 +80,7 @@ export { ENV }
     AutomationsService,
     DeploymentsService,
     AnalyticsService,
+    ProvidersService,
   ],
 })
 export class AppModule {}

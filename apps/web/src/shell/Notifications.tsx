@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { Popover } from 'radix-ui'
 import { Bell, CircleAlert, CircleCheck, Info, TriangleAlert, type LucideIcon } from 'lucide-react'
+import { desktop } from '../desktop/bridge'
 import { request } from '../session'
 import { ERROR_LABEL } from '../monitors/monitors'
 
@@ -40,6 +41,9 @@ export function Notifications() {
   const [unread, setUnread] = useState(0)
   const [failed, setFailed] = useState(false)
 
+  // Ids already shown or present at first load; only later arrivals become OS notifications.
+  const [seen] = useState(() => ({ ids: null as Set<string> | null }))
+
   const load = useCallback(
     () =>
       request<{ items: Notification[]; unread: number }>('GET', '/api/notifications').then(
@@ -48,15 +52,23 @@ export function Notifications() {
           if (!res.ok) return
           setItems(res.data.items)
           setUnread(res.data.unread)
+          if (!desktop) return
+          void desktop.invoke('set_unread', { count: res.data.unread })
+          const fresh = seen.ids ? res.data.items.filter((n) => !seen.ids!.has(n.id)) : []
+          seen.ids = new Set(res.data.items.map((n) => n.id))
+          for (const n of fresh.filter((n) => !n.readAt).slice(0, 3)) {
+            void desktop.invoke('notify', { title: n.title, body: bodyText(n) })
+          }
         },
       ),
-    [],
+    [seen],
   )
 
   useEffect(() => {
     void load()
+    // The desktop app keeps polling from the tray, where the document reports hidden.
     const t = setInterval(() => {
-      if (document.visibilityState === 'visible') void load()
+      if (desktop || document.visibilityState === 'visible') void load()
     }, POLL_MS)
     const onVisible = () => document.visibilityState === 'visible' && void load()
     document.addEventListener('visibilitychange', onVisible)

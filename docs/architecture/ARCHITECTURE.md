@@ -12,7 +12,7 @@ Baseline decisions are in `MASTER_PLAN.md` §03–§10. This document states wha
 | `packages/typescript-config` | Shared tsconfig presets.                                                                                                                                      |
 | Database                     | PostgreSQL 18 via `docker-compose.yml` (127.0.0.1:5433), Prisma migrations in `apps/api/prisma`.                                                              |
 | CI                           | `.github/workflows/ci.yml`: checks, API integration against Postgres, web audit.                                                                              |
-| Desktop, agent, mobile, CLI  | Not created (Phases 3, 5, 8, 7).                                                                                                                              |
+| Desktop, agent, mobile, CLI  | Desktop: `apps/desktop` (Tauri 2, ADR 0006). Agent, mobile, CLI not created (Phases 5, 8, 7).                                                                 |
 
 ## Target for Phase 1 (Foundation)
 
@@ -85,7 +85,7 @@ Adapters behind narrow contracts (`GitProvider` first, read-only). Each adapter 
 | Node              | 22.20 installed. React Router 8 needs ≥ 22.22 (ADR 0001). | Stay on React Router 7 or upgrade Node.                            |
 | Docker            | 29.9 installed.                                           | PostgreSQL via Docker Compose in Phase 1 is viable.                |
 | PostgreSQL client | `psql` 18 installed.                                      | Local inspection possible.                                         |
-| Rust / MSVC       | Not installed.                                            | Blocks Tauri (Phase 3) only.                                       |
+| Rust / MSVC       | Rust 1.100, MSVC 14.44, Windows SDK 26100 (2026-11-26).   | Tauri (Phase 3), `apps/desktop`.                                   |
 | GitHub CLI        | Not installed. No `.github/workflows` yet.                | CI in Phase 1 is written by hand; verify on first push.            |
 | Team size         | One developer.                                            | Monolith, no microservices, no Redis/BullMQ until a measured need. |
 | Hosting           | Not chosen. Criteria in `MASTER_PLAN.md` §35.             | Decide by ADR before the first deploy, not in Phase 1.             |

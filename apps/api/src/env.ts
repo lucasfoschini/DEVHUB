@@ -21,6 +21,12 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env) {
      *  that need it answer 503 without it. */
     encryptionKey: source.ENCRYPTION_KEY ? parseKey(source.ENCRYPTION_KEY) : null,
     github: loadGithub(source, webOrigin),
+    /** Read-only provider APIs (Phase 4); overridable so tests use a local fake. */
+    providerApi: {
+      render: source.RENDER_API_BASE ?? 'https://api.render.com',
+      vercel: source.VERCEL_API_BASE ?? 'https://api.vercel.com',
+      neon: source.NEON_API_BASE ?? 'https://console.neon.tech',
+    },
   }
 }
 

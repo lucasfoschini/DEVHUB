@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { Pencil, Plus, Server as ServerIcon, Trash2 } from 'lucide-react'
 import { inputClass, primaryButton, secondaryButton } from '../components/formStyles'
 import { Field, Loadable, PageShell, Panel } from '../components/page'
+import { NeonPanel } from '../providers/ProviderPanels'
 import {
   ENV_LABEL,
   ENVIRONMENTS,
@@ -298,6 +299,9 @@ export function InfrastructurePage() {
           )
         }
       </Loadable>
+      <div className="mt-6">
+        <NeonPanel />
+      </div>
     </PageShell>
   )
 }

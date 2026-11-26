@@ -8,7 +8,8 @@ Operational rules for coding agents. Product spec: `MASTER_PLAN.md` (load only t
 - TypeScript 6.0.3 (not 7.x: typescript-eslint supports `<6.1`)
 - Web: React 19.3 + Vite 8 + React Router 7 + Tailwind 4 + radix-ui + cmdk + lucide-react (`apps/web`)
 - API: NestJS 12 (ESM, built with `tsc`; `@nestjs/cli` needs a newer Node) + Prisma 7.10.1 + PostgreSQL 18 + Better Auth 1.7 (`apps/api`, ADR 0003)
-- Planned, not yet created: Tauri 2 desktop (Phase 3), Expo (Phase 8)
+- Desktop: Tauri 2.12 + Rust (`apps/desktop`, ADR 0006); loads the web app from `DEVHUB_URL`
+- Planned, not yet created: Expo (Phase 8)
 
 ## Commands (run at repo root)
 
@@ -25,6 +26,8 @@ pnpm --filter @devhub/web test:e2e   # P8 audit: axe, glass budget, screenshots 
 pnpm lint
 pnpm build
 pnpm format
+pnpm desktop:dev                        # Tauri window on the running web app (needs pnpm dev)
+pnpm --filter @devhub/desktop desktop:test   # Rust unit tests
 ```
 
 A change is not done until `typecheck`, `lint`, `test`, `format:check` and `build` pass.
@@ -47,6 +50,7 @@ A change is not done until `typecheck`, `lint`, `test`, `format:check` and `buil
 
 ```text
 apps/api/                    NestJS API: auth, workspaces, audit (prisma/ holds schema + migrations)
+apps/desktop/                Tauri 2 shell (src-tauri/: Rust commands, tray, runtime capability)
 apps/web/                    React + Vite app (shell + prototype)
   src/shell/                 Application Shell (see docs/design/APPLICATION_SHELL.md)
   src/nav.ts                 module list, groups, roadmap phase per module

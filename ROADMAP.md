@@ -44,13 +44,13 @@ Phase 0 docs: architecture and feasibility (`docs/architecture/ARCHITECTURE.md`)
 
 What exists in the web app and API, and what is still blocked. See `docs/decisions/0004-post-mvp-modules.md`.
 
-| Phase | Scope built                                                                                                    | Status                                          |
-| ----- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| 3     | Desktop (Tauri), native notifications, tray, local Git                                                         | Blocked: no Rust/MSVC toolchain on this machine |
-| 4     | Deployments (GitHub Actions runs + Deployments, read-only), Infrastructure inventory (servers per environment) | Partial: no deploy provider, no server metrics  |
-| 5     | Local Agent (pairing, capabilities, remote operations)                                                         | Blocked: depends on Phase 3                     |
-| 6     | AI Center prompt library with variables; Knowledge Base (Markdown notes, search, pin)                          | Partial: no model execution, no Obsidian sync   |
-| 7     | Automations: event → webhook (generic, Slack, Discord), outbox queue, 3 retries, history, inline test delivery | Partial: no workflow editor, no CLI             |
-| 2+    | Secrets Vault (AES-256-GCM, audited reveal, rotation); Analytics (uptime, P95, incidents, MTTR over 7/30 days) | Done                                            |
-| 8     | Mobile (Expo)                                                                                                  | Not started                                     |
-| 9     | SaaS (teams, invites, RBAC, billing)                                                                           | Not started                                     |
+| Phase | Scope built                                                                                                                                                                                                  | Status                                                       |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| 3     | Desktop (Tauri 2, `apps/desktop`, ADR 0006): tray, close to tray, single instance, native notifications, authorized local folders with Git status, open in Explorer/VS Code/Cursor/Terminal, installed tools | Partial: no global shortcuts, no signed installer or updater |
+| 4     | Deployments (GitHub Actions + Deployments, Render services/deploys, Vercel deployments, read-only), Infrastructure inventory + Neon projects/branches (ADR 0005)                                             | Partial: no logs, no metrics, no Docker                      |
+| 5     | Local Agent (pairing, capabilities, remote operations)                                                                                                                                                       | Blocked: depends on Phase 3                                  |
+| 6     | AI Center prompt library with variables; Knowledge Base (Markdown notes, search, pin)                                                                                                                        | Partial: no model execution, no Obsidian sync                |
+| 7     | Automations: event → webhook (generic, Slack, Discord), outbox queue, 3 retries, history, inline test delivery                                                                                               | Partial: no workflow editor, no CLI                          |
+| 2+    | Secrets Vault (AES-256-GCM, audited reveal, rotation); Analytics (uptime, P95, incidents, MTTR over 7/30 days)                                                                                               | Done                                                         |
+| 8     | Mobile (Expo)                                                                                                                                                                                                | Not started                                                  |
+| 9     | SaaS (teams, invites, RBAC, billing)                                                                                                                                                                         | Not started                                                  |

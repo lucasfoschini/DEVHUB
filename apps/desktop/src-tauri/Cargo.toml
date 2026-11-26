@@ -1,0 +1,27 @@
+[package]
+name = "devhub-desktop"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "devhub_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.6", features = [] }
+
+# Exact versions live in Cargo.lock (committed); see docs/decisions/0006-desktop-tauri.md.
+[dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+tauri = { version = "2.12.7", features = ["tray-icon"] }
+tauri-plugin-dialog = "2.8.4"
+tauri-plugin-notification = "2.8.1"
+tauri-plugin-opener = "2.7.3"
+tauri-plugin-single-instance = "2.5.5"
+
+[profile.release]
+codegen-units = 1
+lto = true
+strip = true

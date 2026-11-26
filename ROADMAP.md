@@ -16,4 +16,8 @@ Phases and scope are defined in `MASTER_PLAN.md` §38–39. This file tracks sta
 | P7   | Motion pass + reduced motion                                              | Done   |
 | P8   | Accessibility, contrast and performance audit (`docs/design/UX_AUDIT.md`) | Done   |
 
-Phase 0 shell is complete. Module screens start next, one at a time.
+Phase 0 docs: architecture and feasibility (`docs/architecture/ARCHITECTURE.md`), threat model (`docs/security/THREAT_MODEL.md`).
+
+## Phase 1 — Foundation (next)
+
+API (NestJS), PostgreSQL + Prisma, authentication, workspace, CI. Starts with an ADR choosing the auth library. Module screens are Phase 2 (MVP).

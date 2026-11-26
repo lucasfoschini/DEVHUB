@@ -5,6 +5,7 @@ import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { after, before } from 'node:test'
+import { FAKE, FAKE_GITHUB_PORT, fakeGithub } from './fake-github.ts'
 
 if (existsSync('.env')) process.loadEnvFile('.env')
 
@@ -13,11 +14,22 @@ export const ORIGIN = 'http://localhost:5173'
 export const BASE = `http://127.0.0.1:${PORT}/api`
 export const PASSWORD = 'integration-test-password'
 
+// Always the fake: the real GitHub credentials from .env must never be used by tests.
+fakeGithub.listen(FAKE_GITHUB_PORT, '127.0.0.1')
+const fakeBase = `http://127.0.0.1:${FAKE_GITHUB_PORT}`
+
 const server = spawn(process.execPath, ['dist/main.js'], {
   env: {
     ...process.env,
     PORT: String(PORT),
     WEB_ORIGIN: ORIGIN,
+    // Monitor tests target a local server; the SSRF guard itself is unit-tested (ssrf.test.ts).
+    MONITOR_ALLOW_PRIVATE: 'true',
+    GITHUB_CLIENT_ID: FAKE.clientId,
+    GITHUB_CLIENT_SECRET: FAKE.clientSecret,
+    GITHUB_OAUTH_BASE: fakeBase,
+    GITHUB_API_BASE: fakeBase,
+    ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64'),
     BETTER_AUTH_SECRET:
       process.env.BETTER_AUTH_SECRET || 'integration-test-secret-0123456789abcdef',
   },
@@ -38,6 +50,7 @@ before(async () => {
 
 after(() => {
   server.kill()
+  fakeGithub.close()
 })
 
 /** Signs up a fresh user and returns its session cookie. */
@@ -69,4 +82,22 @@ export function api(cookie: string, method: string, path: string, body?: unknown
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
+}
+
+/** Runs the whole GitHub OAuth flow against the fake for this user. */
+export async function connectGithub(cookie: string) {
+  const start = await fetch(`${BASE}/integrations/github/connect`, {
+    headers: { cookie },
+    redirect: 'manual',
+  })
+  const state = new URL(start.headers.get('location')!).searchParams.get('state')!
+  const stateCookie = start.headers
+    .getSetCookie()
+    .find((c) => c.startsWith('dh_gh_oauth='))!
+    .split(';')[0]!
+  const done = await fetch(
+    `${BASE}/integrations/github/callback?${new URLSearchParams({ code: FAKE.code, state })}`,
+    { headers: { cookie: `${cookie}; ${stateCookie}` }, redirect: 'manual' },
+  )
+  assert.match(done.headers.get('location')!, /github=connected$/)
 }

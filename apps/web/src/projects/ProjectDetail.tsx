@@ -11,6 +11,7 @@ import {
 } from './projects'
 import { inputClass, primaryButton, secondaryButton } from '../components/formStyles'
 import { StatusBadge } from './ProjectsPage'
+import { ProjectRepositories } from './ProjectRepositories'
 
 const dateTime = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium', timeStyle: 'short' })
 
@@ -180,12 +181,7 @@ export function ProjectDetail() {
         </div>
       </form>
 
-      <section className="mt-8">
-        <h2 className="text-headline">Repositórios, ambientes e monitores</h2>
-        <p className="mt-1 text-secondary">
-          Vínculos chegam com a integração GitHub e os monitores HTTP (Fase 2).
-        </p>
-      </section>
+      <ProjectRepositories projectId={project.id} />
     </div>
   )
 }

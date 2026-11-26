@@ -30,12 +30,12 @@ Phase 0 docs: architecture and feasibility (`docs/architecture/ARCHITECTURE.md`)
 
 ## Phase 2 — MVP (`MASTER_PLAN.md` §39)
 
-| Step | Scope                                                             | Status |
-| ---- | ----------------------------------------------------------------- | ------ |
-| 2.1  | Projects: create, edit, archive, search, filter (API + screen)    | Done   |
-| 2.2  | GitHub integration (OAuth app, encrypted token, read-only scopes) | Next   |
-| 2.3  | Repository import and linking to projects                         | —      |
-| 2.4  | HTTP monitors (SSRF guard, scheduler, history, incidents)         | —      |
-| 2.5  | In-app notifications                                              | —      |
-| 2.6  | Command Center with real data                                     | —      |
-| 2.7  | Settings                                                          | —      |
+| Step | Scope                                                                               | Status |
+| ---- | ----------------------------------------------------------------------------------- | ------ |
+| 2.1  | Projects: create, edit, archive, search, filter (API + screen)                      | Done   |
+| 2.2  | GitHub integration (OAuth app, encrypted token, scope chosen by the user)           | Done   |
+| 2.3  | Repository import and linking to projects                                           | Done   |
+| 2.4  | HTTP monitors (SSRF guard, scheduler, history, incidents)                           | Done   |
+| 2.5  | In-app notifications (monitor down/recovered, GitHub needs reconnect)               | Done   |
+| 2.6  | Command Center with real data (`/api/overview`: monitors, incidents, projects, Git) | Done   |
+| 2.7  | Settings: profile, password, sessions, notification preferences, integrations       | Done   |

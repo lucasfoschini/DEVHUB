@@ -13,6 +13,7 @@ import {
   Search,
 } from 'lucide-react'
 import { isApple, shortcut } from '../platform'
+import { Notifications } from './Notifications'
 
 /** Below this toolbar width, back/forward move into the overflow menu and breadcrumbs
  *  collapse to the current page. Measured on the toolbar, not the window. */
@@ -236,6 +237,7 @@ export function Toolbar(props: {
             </DropdownMenu.Content>
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
+        <Notifications />
         {props.controlCenter}
       </Group>
     </header>

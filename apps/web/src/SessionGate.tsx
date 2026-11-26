@@ -37,7 +37,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
   const reload = () => setAttempt((n) => n + 1)
 
   if ('user' in state) {
-    return <SessionContext value={{ ...state, signOut }}>{children}</SessionContext>
+    return <SessionContext value={{ ...state, signOut, reload }}>{children}</SessionContext>
   }
   if (state.status === 'loading') return null
   if (state.status === 'offline') return <Offline onRetry={reload} />

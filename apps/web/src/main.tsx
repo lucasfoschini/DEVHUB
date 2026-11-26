@@ -8,10 +8,22 @@ import { TokenSpecimen } from './dev/TokenSpecimen'
 import { SessionGate } from './SessionGate'
 import { ProjectsPage } from './projects/ProjectsPage'
 import { ProjectDetail } from './projects/ProjectDetail'
+import { MonitorsPage } from './monitors/MonitorsPage'
+import { MonitorDetail } from './monitors/MonitorDetail'
+import { GitCenterPage } from './git/GitCenterPage'
+import { OverviewPage } from './overview/OverviewPage'
+import { SettingsPage } from './settings/SettingsPage'
 import './index.css'
 
 /** Modules with a built screen; the rest show the roadmap empty state. */
-const screens: Record<string, ReactNode> = { '/projects': <ProjectsPage /> }
+const screens: Record<string, ReactNode> = {
+  '/': <OverviewPage />,
+  '/projects': <ProjectsPage />,
+  '/observability': <MonitorsPage />,
+  '/git': <GitCenterPage />,
+  '/settings': <SettingsPage />,
+}
+const moduleAt = (path: string) => modules.find((x) => x.path === path)
 
 const moduleRoutes: RouteObject[] = modules.map((m) => {
   const handle: RouteHandle = { module: m }
@@ -34,7 +46,12 @@ const router = createBrowserRouter([
       {
         path: 'projects/:id',
         element: <ProjectDetail />,
-        handle: { module: modules.find((x) => x.path === '/projects') } satisfies RouteHandle,
+        handle: { module: moduleAt('/projects') } satisfies RouteHandle,
+      },
+      {
+        path: 'observability/:id',
+        element: <MonitorDetail />,
+        handle: { module: moduleAt('/observability') } satisfies RouteHandle,
       },
       { path: '*', element: <NotFound /> },
     ],

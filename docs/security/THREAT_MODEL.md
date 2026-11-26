@@ -31,16 +31,17 @@ Phase column: when the mitigation must exist, at the latest.
 
 ### B1 → B2: browser to API (Phase 1)
 
-| STRIDE | Threat                                          | Mitigation                                                                                                                                | Phase |
-| ------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| S      | Session theft via XSS                           | `HttpOnly; Secure; SameSite=Lax` cookie; CSP without `unsafe-inline` scripts; React escaping; no `dangerouslySetInnerHTML` on remote data | 1     |
-| S      | Credential stuffing, brute force on login       | Rate limit per account and per IP (correct `trust proxy`); delegate passwords to the auth library or OAuth only                           | 1     |
-| T      | CSRF on state-changing routes                   | CSRF token or double-submit; reject unsafe methods without it; strict CORS allowlist                                                      | 1     |
-| R      | User denies an action                           | AuditLog row for every write: actor, workspace, action, target, time                                                                      | 1     |
-| I      | IDOR: reading another workspace's resource      | Every query scoped by `workspaceId` from the session, never from the request body; tests per endpoint                                     | 1     |
-| I      | Verbose errors leak stack traces or SQL         | Generic error body, details only in server logs                                                                                           | 1     |
-| D      | Large payloads, unbounded lists                 | Body size limit, pagination with max page size, request timeouts                                                                          | 1     |
-| E      | Mass assignment (`role`, `workspaceId` in body) | DTO validation with an allowlist of fields (Zod or class-validator), never spread the body into Prisma                                    | 1     |
+| STRIDE | Threat                                            | Mitigation                                                                                                                                                                                         | Phase |
+| ------ | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| S      | Session theft via XSS                             | `HttpOnly; Secure; SameSite=Lax` cookie; CSP without `unsafe-inline` scripts; React escaping; no `dangerouslySetInnerHTML` on remote data                                                          | 1     |
+| S      | Credential stuffing, brute force on login         | Rate limit per account and per IP (correct `trust proxy`); delegate passwords to the auth library or OAuth only                                                                                    | 1     |
+| T      | CSRF on state-changing routes                     | CSRF token or double-submit; reject unsafe methods without it; strict CORS allowlist                                                                                                               | 1     |
+| R      | User denies an action                             | AuditLog row for every write: actor, workspace, action, target, time                                                                                                                               | 1     |
+| I      | IDOR: reading another workspace's resource        | Every query scoped by `workspaceId` from the session, never from the request body; tests per endpoint                                                                                              | 1     |
+| I      | Verbose errors leak stack traces or SQL           | Generic error body, details only in server logs                                                                                                                                                    | 1     |
+| D      | Large payloads, unbounded lists                   | Body size limit, pagination with max page size, request timeouts                                                                                                                                   | 1     |
+| E      | Mass assignment (`role`, `workspaceId` in body)   | DTO validation with an allowlist of fields (Zod or class-validator), never spread the body into Prisma                                                                                             | 1     |
+| S      | Stolen session stays valid after the user notices | Done (2.7): Settings lists sessions (tokens never leave the API) and revokes any other one, scoped to the user; changing the password revokes every other session and re-issues the current cookie | 2     |
 
 ### B2 → B3: API to PostgreSQL (Phase 1)
 
@@ -53,20 +54,20 @@ Phase column: when the mitigation must exist, at the latest.
 
 ### B2 ↔ B4: GitHub (Phase 2)
 
-| STRIDE | Threat                               | Mitigation                                                                                                  | Phase |
-| ------ | ------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ----- |
-| I      | Token leak from DB or logs           | Encrypt tokens at rest (key outside the DB); `CredentialReference` stores ciphertext; redact tokens in logs | 2     |
-| E      | Over-broad scopes                    | Read-only scopes for the MVP; show granted scopes in the UI; revoke on disconnect                           | 2     |
-| S      | OAuth login CSRF / code injection    | `state` and PKCE on every OAuth flow; exact redirect URI                                                    | 2     |
-| S, T   | Forged or replayed webhooks          | Verify `X-Hub-Signature-256` with constant-time compare; dedupe by delivery id                              | 2     |
-| D      | Rate limit exhaustion across clients | Cache and dedupe GitHub calls server-side; respect rate limit headers; incremental sync                     | 2     |
+| STRIDE | Threat                               | Mitigation                                                                                                                                                                                                   | Phase |
+| ------ | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----- |
+| I      | Token leak from DB or logs           | Done: AES-256-GCM in `Integration.encryptedToken`, key only in `ENCRYPTION_KEY`; token never sent to the client; token exchange errors log only the provider error code                                      | 2     |
+| E      | Over-broad scopes                    | OAuth Apps have no read-only private scope: the user picks `read:user` (public only) or `repo` (private, also allows writes), stated in the UI; granted scopes shown; disconnect revokes the grant at GitHub | 2     |
+| S      | OAuth login CSRF / code injection    | Done: random `state` + PKCE S256 in an HttpOnly, SameSite=Lax, path-scoped, 10-minute cookie, compared in constant time; exact redirect URI                                                                  | 2     |
+| S, T   | Forged or replayed webhooks          | Verify `X-Hub-Signature-256` with constant-time compare; dedupe by delivery id                                                                                                                               | 2     |
+| D      | Rate limit exhaustion across clients | Cache and dedupe GitHub calls server-side; respect rate limit headers; incremental sync                                                                                                                      | 2     |
 
 ### B2 → B5: monitored URLs (Phase 2)
 
-| STRIDE | Threat                                                               | Mitigation                                                                                                          | Phase |
-| ------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----- |
-| I, E   | SSRF: monitor pointed at `localhost`, metadata IPs, internal network | Resolve DNS, block private, loopback, link-local and metadata ranges, re-check after redirects; `http`/`https` only | 2     |
-| D      | Slow or huge responses tie up the worker                             | Short timeout, response size cap, limited concurrency, minimum interval per monitor                                 | 2     |
+| STRIDE | Threat                                                               | Mitigation                                                                                                                                                                                                                                                                                                                                                 | Phase |
+| ------ | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| I, E   | SSRF: monitor pointed at `localhost`, metadata IPs, internal network | Done (`apps/api/src/monitors/probe.ts`): IP checked inside the socket `lookup` (no DNS-rebinding window); IP-literal hosts checked separately because Node skips `lookup` for them; IPv4-mapped IPv6 included; each redirect hop (max 3) re-checked; `http`/`https` only, no credentials. `MONITOR_ALLOW_PRIVATE=true` turns it off for dev and tests only | 2     |
+| D      | Slow or huge responses tie up the worker                             | Done: timeout 1–10 s, body never read, 5 concurrent checks, interval ≥ 60 s, 50 monitors per workspace, manual check at most every 10 s                                                                                                                                                                                                                    | 2     |
 
 ### B6: local agent (Phase 5) and desktop (Phase 3)
 

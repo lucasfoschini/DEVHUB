@@ -1,7 +1,7 @@
 generator client {
-  provider     = "prisma-client"
-  output       = "../src/generated/prisma"
-  moduleFormat = "esm"
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
   // Explicit: Prisma otherwise infers it from tsconfig, which allows .ts imports for tests.
   importFileExtension = "js"
 }
@@ -81,15 +81,22 @@ enum Role {
 }
 
 model Workspace {
-  id          String       @id @default(uuid(7))
-  name        String
+  id                     String         @id @default(uuid(7))
+  name                   String
   /// Set only for a user's personal workspace; unique so creating it is idempotent.
-  personalFor String?      @unique
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  memberships Membership[]
-  auditLogs   AuditLog[]
-  projects    Project[]
+  personalFor            String?        @unique
+  /// Notification kinds this workspace does not want (Settings). Checked when emitting.
+  mutedNotificationKinds String[]       @default([])
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  memberships            Membership[]
+  auditLogs              AuditLog[]
+  projects               Project[]
+  monitors               Monitor[]
+  incidents              Incident[]
+  integrations           Integration[]
+  repositories           Repository[]
+  notifications          Notification[]
 
   @@map("workspace")
 }
@@ -137,16 +144,178 @@ enum ProjectStatus {
 }
 
 model Project {
-  id          String        @id @default(uuid(7))
-  workspaceId String
-  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  name        String
-  description String        @default("")
-  status      ProjectStatus @default(planning)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id           String              @id @default(uuid(7))
+  workspaceId  String
+  workspace    Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name         String
+  description  String              @default("")
+  status       ProjectStatus       @default(planning)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  monitors     Monitor[]
+  repositories ProjectRepository[]
 
   @@unique([workspaceId, name])
   @@index([workspaceId, updatedAt])
   @@map("project")
+}
+
+enum MonitorState {
+  unknown
+  up
+  down
+}
+
+/// HTTP health check (MASTER_PLAN §7.6). Targets pass the SSRF guard on every request.
+model Monitor {
+  id                  String         @id @default(uuid(7))
+  workspaceId         String
+  workspace           Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId           String?
+  project             Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  name                String
+  url                 String
+  intervalSeconds     Int            @default(300)
+  timeoutMs           Int            @default(5000)
+  enabled             Boolean        @default(true)
+  state               MonitorState   @default(unknown)
+  consecutiveFailures Int            @default(0)
+  lastCheckedAt       DateTime?
+  /// Due time; the scheduler claims a monitor by moving this forward atomically.
+  nextCheckAt         DateTime       @default(now())
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  checks              MonitorCheck[]
+  incidents           Incident[]
+
+  @@unique([workspaceId, name])
+  @@index([enabled, nextCheckAt])
+  @@index([projectId])
+  @@map("monitor")
+}
+
+model MonitorCheck {
+  id         String   @id @default(uuid(7))
+  monitorId  String
+  monitor    Monitor  @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  checkedAt  DateTime @default(now())
+  ok         Boolean
+  statusCode Int?
+  latencyMs  Int?
+  /// Short machine-readable reason when not ok (timeout, blocked_address, dns, http_status…).
+  error      String?
+
+  @@index([monitorId, checkedAt])
+  @@index([checkedAt])
+  @@map("monitor_check")
+}
+
+model Incident {
+  id          String    @id @default(uuid(7))
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  monitorId   String
+  monitor     Monitor   @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  cause       String
+  openedAt    DateTime  @default(now())
+  resolvedAt  DateTime?
+
+  @@index([workspaceId, openedAt])
+  @@index([monitorId, resolvedAt])
+  @@map("incident")
+}
+
+enum IntegrationStatus {
+  connected
+  /// The provider rejected the stored token (revoked or expired): the user must reconnect.
+  needs_reconnect
+}
+
+/// A provider account connected to a workspace (THREAT_MODEL.md B4). One per provider.
+model Integration {
+  id             String            @id @default(uuid(7))
+  workspaceId    String
+  workspace      Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  provider       String
+  externalId     String
+  externalLogin  String
+  /// Scopes the provider actually granted, as reported by it.
+  scopes         String[]
+  /// AES-256-GCM, format "v1:iv:tag:ciphertext" (base64). Decrypted only inside the API.
+  encryptedToken String
+  status         IntegrationStatus @default(connected)
+  connectedById  String
+  lastSyncAt     DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@unique([workspaceId, provider])
+  @@map("integration")
+}
+
+/// A provider repository imported into a workspace. Metadata is a snapshot taken from the
+/// provider on import or sync, never from client input.
+model Repository {
+  id            String              @id @default(uuid(7))
+  workspaceId   String
+  workspace     Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  provider      String
+  externalId    String
+  fullName      String
+  description   String              @default("")
+  private       Boolean
+  archived      Boolean             @default(false)
+  defaultBranch String
+  htmlUrl       String
+  language      String?
+  pushedAt      DateTime?
+  importedById  String
+  lastSyncAt    DateTime            @default(now())
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  projects      ProjectRepository[]
+
+  @@unique([workspaceId, provider, externalId])
+  @@index([workspaceId, fullName])
+  @@map("repository")
+}
+
+model ProjectRepository {
+  projectId    String
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  repositoryId String
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@id([projectId, repositoryId])
+  @@index([repositoryId])
+  @@map("project_repository")
+}
+
+enum NotificationSeverity {
+  info
+  success
+  warning
+  critical
+}
+
+/// In-app notification (MASTER_PLAN §34). Emitted only on state transitions (incident opened or
+/// resolved, integration needs reconnect), so a flapping source cannot flood the list.
+model Notification {
+  id          String               @id @default(uuid(7))
+  workspaceId String
+  workspace   Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  /// Event type: monitor.down, monitor.recovered, integration.needs_reconnect.
+  kind        String
+  severity    NotificationSeverity
+  title       String
+  body        String               @default("")
+  /// In-app path to the source, never an external URL.
+  href        String?
+  readAt      DateTime?
+  createdAt   DateTime             @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, readAt])
+  @@map("notification")
 }

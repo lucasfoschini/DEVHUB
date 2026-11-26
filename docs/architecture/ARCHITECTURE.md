@@ -4,15 +4,15 @@ Baseline decisions are in `MASTER_PLAN.md` §03–§10. This document states wha
 
 ## Current state (Phase 1 in progress, 2026-11-26)
 
-| Part                         | Status                                                                                             |
-| ---------------------------- | -------------------------------------------------------------------------------------------------- |
-| `apps/web`                   | Shell prototype behind sign-in. Module data is still simulated (`src/mocks`) and labelled.         |
-| `apps/api`                   | NestJS: Better Auth (email/password), `/api/me` with personal workspace, `/api/health`, audit log. |
-| `packages/design-tokens`     | Tokens → `tokens.css`, contrast gate in `pnpm test`.                                               |
-| `packages/typescript-config` | Shared tsconfig presets.                                                                           |
-| Database                     | PostgreSQL 18 via `docker-compose.yml` (127.0.0.1:5433), Prisma migrations in `apps/api/prisma`.   |
-| CI                           | `.github/workflows/ci.yml`: checks, API integration against Postgres, web audit.                   |
-| Desktop, agent, mobile, CLI  | Not created (Phases 3, 5, 8, 7).                                                                   |
+| Part                         | Status                                                                                                                                                        |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web`                   | Shell prototype behind sign-in. Module data is still simulated (`src/mocks`) and labelled.                                                                    |
+| `apps/api`                   | NestJS: Better Auth (email/password), `/api/me`, projects, HTTP monitors with an in-process scheduler, GitHub OAuth + read-only repository import, audit log. |
+| `packages/design-tokens`     | Tokens → `tokens.css`, contrast gate in `pnpm test`.                                                                                                          |
+| `packages/typescript-config` | Shared tsconfig presets.                                                                                                                                      |
+| Database                     | PostgreSQL 18 via `docker-compose.yml` (127.0.0.1:5433), Prisma migrations in `apps/api/prisma`.                                                              |
+| CI                           | `.github/workflows/ci.yml`: checks, API integration against Postgres, web audit.                                                                              |
+| Desktop, agent, mobile, CLI  | Not created (Phases 3, 5, 8, 7).                                                                                                                              |
 
 ## Target for Phase 1 (Foundation)
 
@@ -55,16 +55,17 @@ Packages created only when they gain a second consumer:
 
 Only entities the MVP (`MASTER_PLAN.md` §39) needs. All rows carry `createdAt`/`updatedAt` in UTC.
 
-| Entity                           | Purpose                                                  | Phase |
-| -------------------------------- | -------------------------------------------------------- | ----- |
-| User, Session, Account           | Identity, revocable sessions, linked login providers     | 1     |
-| Workspace, Membership            | Isolation boundary; role `owner` only in the MVP         | 1     |
-| AuditLog                         | Who did what, in which workspace; append-only            | 1     |
-| Project                          | Unique name per workspace                                | 2     |
-| Integration, CredentialReference | Connected provider and a pointer to its encrypted token  | 2     |
-| Repository, ProjectRepository    | Imported repos (external id), many-to-many with projects | 2     |
-| Monitor, MonitorCheck, Incident  | HTTP checks and their history                            | 2     |
-| Notification, ActivityEvent      | In-app alerts and the activity feed                      | 2     |
+| Entity                          | Purpose                                                                                          | Phase |
+| ------------------------------- | ------------------------------------------------------------------------------------------------ | ----- |
+| User, Session, Account          | Identity, revocable sessions, linked login providers                                             | 1     |
+| Workspace, Membership           | Isolation boundary; role `owner` only in the MVP                                                 | 1     |
+| AuditLog                        | Who did what, in which workspace; append-only                                                    | 1     |
+| Project                         | Unique name per workspace                                                                        | 2     |
+| Integration                     | Connected provider, granted scopes and the AES-256-GCM encrypted token (key in `ENCRYPTION_KEY`) | 2     |
+| Repository, ProjectRepository   | Imported repos (external id), many-to-many with projects                                         | 2     |
+| Monitor, MonitorCheck, Incident | HTTP checks and their history                                                                    | 2     |
+| Notification                    | In-app alerts, emitted only on state transitions (incident opened/resolved, token rejected)      | 2     |
+| ActivityEvent                   | Activity feed                                                                                    | 2     |
 
 Every workspace-owned table has `workspaceId` with a foreign key and an index, and queries filter by it. Row-level security in PostgreSQL is evaluated in Phase 9 (SaaS); until then there is one personal workspace per user.
 
@@ -90,3 +91,9 @@ Adapters behind narrow contracts (`GitProvider` first, read-only). Each adapter 
 2. **Credential handling.** GitHub tokens and, later, a local agent with machine access. Mitigation: threat model before code; tokens encrypted at rest and only in the API.
 3. **Visual ambition vs. performance.** Glass and motion on low-end machines. Mitigation: glass budget and reduced-transparency path enforced by the P8 audit.
 4. **Pinned toolchain drift.** TypeScript 6 and React Router 7 pins (ADR 0001). Mitigation: revisit list in the ADR.
+
+## Monitor scheduler
+
+HTTP monitors run inside the API process, without Redis or BullMQ (`MASTER_PLAN.md` §33: only on measured need). Every 15 s the API claims due monitors with `UPDATE … WHERE id IN (SELECT … FOR UPDATE SKIP LOCKED) RETURNING`, moving `nextCheckAt` forward in the same statement, so several API instances never check the same monitor twice. Checks run 5 at a time. Each result, the monitor state and incident changes are written in one transaction. An incident opens after 2 consecutive failures and resolves on the next success. Checks older than 30 days are deleted hourly.
+
+Revisit when checks per minute outgrow one process, or when alerts need delivery guarantees (then a queue).

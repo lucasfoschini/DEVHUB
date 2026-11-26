@@ -2,18 +2,38 @@ import { Module } from '@nestjs/common'
 import { AuditService } from './audit/audit.service.js'
 import { AUTH, createAuth } from './auth/auth.js'
 import { SessionGuard } from './auth/session.guard.js'
+import { ENV_TOKEN as ENV } from './env-token.js'
 import { loadEnv, type Env } from './env.js'
 import { HealthController } from './health/health.controller.js'
+import { GithubService } from './integrations/github.service.js'
+import { IntegrationsController } from './integrations/integrations.controller.js'
+import { RepositoriesController } from './repositories/repositories.controller.js'
+import { RepositoriesService } from './repositories/repositories.service.js'
+import { MonitorsController } from './monitors/monitors.controller.js'
+import { MonitorsService } from './monitors/monitors.service.js'
+import { NotificationsController } from './notifications/notifications.controller.js'
+import { NotificationsService } from './notifications/notifications.service.js'
+import { OverviewController } from './overview/overview.controller.js'
+import { OverviewService } from './overview/overview.service.js'
 import { PrismaService } from './prisma.service.js'
 import { ProjectsController } from './projects/projects.controller.js'
 import { ProjectsService } from './projects/projects.service.js'
 import { MeController } from './workspaces/me.controller.js'
 import { WorkspacesService } from './workspaces/workspaces.service.js'
 
-export const ENV = Symbol('ENV')
+export { ENV }
 
 @Module({
-  controllers: [HealthController, MeController, ProjectsController],
+  controllers: [
+    HealthController,
+    MeController,
+    ProjectsController,
+    MonitorsController,
+    IntegrationsController,
+    RepositoriesController,
+    NotificationsController,
+    OverviewController,
+  ],
   providers: [
     { provide: ENV, useFactory: () => loadEnv() },
     {
@@ -31,6 +51,11 @@ export const ENV = Symbol('ENV')
     SessionGuard,
     WorkspacesService,
     ProjectsService,
+    MonitorsService,
+    GithubService,
+    RepositoriesService,
+    NotificationsService,
+    OverviewService,
   ],
 })
 export class AppModule {}

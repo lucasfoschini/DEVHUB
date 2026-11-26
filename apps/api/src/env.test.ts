@@ -25,3 +25,18 @@ test('rejects a short secret', () => {
 test('rejects an invalid port', () => {
   assert.throws(() => loadEnv({ ...valid, PORT: 'abc' }), /PORT/)
 })
+
+test('GitHub is optional, but complete when enabled', () => {
+  assert.equal(loadEnv(valid).github, null)
+  assert.throws(
+    () => loadEnv({ ...valid, GITHUB_CLIENT_ID: 'id' }),
+    /GITHUB_CLIENT_SECRET, ENCRYPTION_KEY/,
+  )
+  const env = loadEnv({
+    ...valid,
+    GITHUB_CLIENT_ID: 'id',
+    GITHUB_CLIENT_SECRET: 's',
+    ENCRYPTION_KEY: Buffer.alloc(32).toString('base64'),
+  })
+  assert.equal(env.github?.redirectUri, 'http://localhost:5173/api/integrations/github/callback')
+})

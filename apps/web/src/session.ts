@@ -7,6 +7,8 @@ export interface Me {
 
 export interface SessionValue extends Me {
   signOut: () => Promise<void>
+  /** Re-reads /api/me (after a profile change). */
+  reload: () => void
 }
 
 export const SessionContext = createContext<SessionValue | null>(null)

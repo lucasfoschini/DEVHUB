@@ -232,9 +232,9 @@ export function ActivityShelf() {
             <Popover.Trigger asChild>
               <button
                 type="button"
-                aria-label="Atividades"
                 className="dh-material-elevated pointer-events-auto flex h-11 w-[min(360px,100%)] items-center gap-2.5 rounded-full px-4 text-body"
               >
+                <span className="sr-only">Atividades: </span>
                 <Summary items={items} now={now} />
               </button>
             </Popover.Trigger>

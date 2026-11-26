@@ -4,16 +4,16 @@ Phases and scope are defined in `MASTER_PLAN.md` §38–39. This file tracks sta
 
 ## Phase 0 — Prototype foundation
 
-| Step | Scope                                                                  | Status |
-| ---- | ---------------------------------------------------------------------- | ------ |
-| P0   | Monorepo, TS, lint, format, Vite app                                   | Done   |
-| P1   | Graphite Lime tokens (dark, light, materials, motion) + contrast check | Done   |
-| P2   | Application Shell + adaptive sidebar + module routes                   | Done   |
-| P3   | Contextual toolbar                                                     | Done   |
-| P4   | Spotlight Search (Ctrl/Cmd+K)                                          | Done   |
-| P5   | Control Center                                                         | Done   |
-| P6   | Activity Shelf                                                         | Done   |
-| P7   | Motion pass + reduced motion                                           | Done   |
-| P8   | Accessibility, contrast and performance audit                          | Next   |
+| Step | Scope                                                                     | Status |
+| ---- | ------------------------------------------------------------------------- | ------ |
+| P0   | Monorepo, TS, lint, format, Vite app                                      | Done   |
+| P1   | Graphite Lime tokens (dark, light, materials, motion) + contrast check    | Done   |
+| P2   | Application Shell + adaptive sidebar + module routes                      | Done   |
+| P3   | Contextual toolbar                                                        | Done   |
+| P4   | Spotlight Search (Ctrl/Cmd+K)                                             | Done   |
+| P5   | Control Center                                                            | Done   |
+| P6   | Activity Shelf                                                            | Done   |
+| P7   | Motion pass + reduced motion                                              | Done   |
+| P8   | Accessibility, contrast and performance audit (`docs/design/UX_AUDIT.md`) | Done   |
 
-Module screens start after P8, one at a time.
+Phase 0 shell is complete. Module screens start next, one at a time.

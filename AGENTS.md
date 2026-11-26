@@ -16,6 +16,7 @@ pnpm install
 pnpm dev          # apps/web on Vite
 pnpm typecheck
 pnpm test         # contrast gate + activity store tests
+pnpm --filter @devhub/web test:e2e   # P8 audit: axe, glass budget, screenshots (installed Chrome)
 pnpm lint
 pnpm build
 pnpm format

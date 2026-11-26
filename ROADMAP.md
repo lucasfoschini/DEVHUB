@@ -28,4 +28,14 @@ Phase 0 docs: architecture and feasibility (`docs/architecture/ARCHITECTURE.md`)
 | 1.4  | Web sign-in, session gate, sign-out                                           | Done                         |
 | 1.5  | CI (GitHub Actions): checks, API integration, web audit                       | Done (not yet run on GitHub) |
 
-Module screens are Phase 2 (MVP).
+## Phase 2 — MVP (`MASTER_PLAN.md` §39)
+
+| Step | Scope                                                             | Status |
+| ---- | ----------------------------------------------------------------- | ------ |
+| 2.1  | Projects: create, edit, archive, search, filter (API + screen)    | Done   |
+| 2.2  | GitHub integration (OAuth app, encrypted token, read-only scopes) | Next   |
+| 2.3  | Repository import and linking to projects                         | —      |
+| 2.4  | HTTP monitors (SSRF guard, scheduler, history, incidents)         | —      |
+| 2.5  | In-app notifications                                              | —      |
+| 2.6  | Command Center with real data                                     | —      |
+| 2.7  | Settings                                                          | —      |

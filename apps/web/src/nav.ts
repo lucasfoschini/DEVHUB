@@ -51,10 +51,6 @@ export const modules: ModuleDef[] = [
     group: 'workspace',
     purpose: 'Projetos, tecnologias, ambientes, repositórios e decisões técnicas.',
     phase: 'Fase 2 · MVP',
-    inspector: {
-      title: 'Detalhes do projeto',
-      empty: 'Selecione um projeto para ver tecnologias, ambientes e repositórios.',
-    },
   },
   {
     path: '/git',

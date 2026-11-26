@@ -5,13 +5,15 @@ import { SessionGuard } from './auth/session.guard.js'
 import { loadEnv, type Env } from './env.js'
 import { HealthController } from './health/health.controller.js'
 import { PrismaService } from './prisma.service.js'
+import { ProjectsController } from './projects/projects.controller.js'
+import { ProjectsService } from './projects/projects.service.js'
 import { MeController } from './workspaces/me.controller.js'
 import { WorkspacesService } from './workspaces/workspaces.service.js'
 
 export const ENV = Symbol('ENV')
 
 @Module({
-  controllers: [HealthController, MeController],
+  controllers: [HealthController, MeController, ProjectsController],
   providers: [
     { provide: ENV, useFactory: () => loadEnv() },
     {
@@ -28,6 +30,7 @@ export const ENV = Symbol('ENV')
     },
     SessionGuard,
     WorkspacesService,
+    ProjectsService,
   ],
 })
 export class AppModule {}

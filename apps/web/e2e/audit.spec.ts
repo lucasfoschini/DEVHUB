@@ -10,6 +10,14 @@ const MATERIALS = ['balanced', 'clear', 'opaque'] as const
 /** Glass surfaces allowed on screen at once: 4 shell chrome (sidebar + 3 toolbar groups),
  *  the Activity Shelf pill and 1 overlay. See docs/design/UX_AUDIT.md. */
 const MAX_GLASS = 6
+const PROJECT = {
+  id: '01900000-0000-7000-8000-000000000001',
+  name: 'Projeto de auditoria',
+  description: 'Dados fixos do teste',
+  status: 'development',
+  createdAt: '2026-11-26T00:00:00.000Z',
+  updatedAt: '2026-11-26T00:00:00.000Z',
+}
 const ME = {
   user: { id: 'u1', name: 'Auditoria', email: 'audit@devhub.test' },
   workspace: { id: 'w1', name: 'Pessoal', role: 'owner' },
@@ -65,6 +73,12 @@ for (const theme of THEMES) {
         )
         // The audit covers the UI, not the API: a fixed signed-in session.
         await page.route('**/api/me', (route) => route.fulfill({ json: ME }))
+        await page.route('**/api/projects?*', (route) =>
+          route.fulfill({ json: { items: [PROJECT], nextCursor: null } }),
+        )
+        await page.route(`**/api/projects/${PROJECT.id}`, (route) =>
+          route.fulfill({ json: PROJECT }),
+        )
       })
 
       test('module routes', async ({ page }) => {
@@ -76,6 +90,13 @@ for (const theme of THEMES) {
         }
         await page.goto('/')
         await shot(page, `${theme}-${material}-overview`)
+      })
+
+      test('project detail', async ({ page }) => {
+        await page.goto(`/projects/${PROJECT.id}`)
+        await expect(page.getByRole('heading', { name: PROJECT.name })).toBeVisible()
+        await axe(page, 'project-detail')
+        await shot(page, `${theme}-${material}-project-detail`)
       })
 
       test('overlays', async ({ page }) => {

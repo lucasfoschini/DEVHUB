@@ -6,6 +6,7 @@ import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { after, before } from 'node:test'
 import { FAKE, FAKE_GITHUB_PORT, fakeGithub } from './fake-github.ts'
+import { FAKE_PROVIDERS_PORT, fakeProviders } from './fake-providers.ts'
 
 if (existsSync('.env')) process.loadEnvFile('.env')
 
@@ -17,6 +18,8 @@ export const PASSWORD = 'integration-test-password'
 // Always the fake: the real GitHub credentials from .env must never be used by tests.
 fakeGithub.listen(FAKE_GITHUB_PORT, '127.0.0.1')
 const fakeBase = `http://127.0.0.1:${FAKE_GITHUB_PORT}`
+fakeProviders.listen(FAKE_PROVIDERS_PORT, '127.0.0.1')
+const providersBase = `http://127.0.0.1:${FAKE_PROVIDERS_PORT}`
 
 const server = spawn(process.execPath, ['dist/main.js'], {
   env: {
@@ -29,6 +32,9 @@ const server = spawn(process.execPath, ['dist/main.js'], {
     GITHUB_CLIENT_SECRET: FAKE.clientSecret,
     GITHUB_OAUTH_BASE: fakeBase,
     GITHUB_API_BASE: fakeBase,
+    RENDER_API_BASE: providersBase,
+    VERCEL_API_BASE: providersBase,
+    NEON_API_BASE: providersBase,
     ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64'),
     BETTER_AUTH_SECRET:
       process.env.BETTER_AUTH_SECRET || 'integration-test-secret-0123456789abcdef',
@@ -51,6 +57,7 @@ before(async () => {
 after(() => {
   server.kill()
   fakeGithub.close()
+  fakeProviders.close()
 })
 
 /** Signs up a fresh user and returns its session cookie. */

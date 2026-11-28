@@ -12,7 +12,9 @@
     "typecheck": "turbo run typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "desktop:dev": "pnpm --filter @devhub/desktop desktop:dev",
+    "desktop:build": "pnpm --filter @devhub/desktop desktop:build"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

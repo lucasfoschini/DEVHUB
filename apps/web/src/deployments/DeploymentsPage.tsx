@@ -12,6 +12,7 @@ import {
 import { secondaryButton } from '../components/formStyles'
 import { Loadable, PageShell, Panel } from '../components/page'
 import { formatDate, inlineLink, useApi } from '../components/page-utils'
+import { RenderPanel, VercelPanel } from '../providers/ProviderPanels'
 
 interface Run {
   id: number
@@ -172,7 +173,7 @@ export function DeploymentsPage() {
   return (
     <PageShell
       title="Deployments"
-      subtitle="Pipelines e deployments dos repositórios importados, lidos do GitHub (cache de 60 s)."
+      subtitle="Deploys do Render e da Vercel e pipelines do GitHub, somente leitura (cache de 60 s)."
       wide
       action={
         <button type="button" className={secondaryButton} onClick={state.reload}>
@@ -180,6 +181,11 @@ export function DeploymentsPage() {
         </button>
       }
     >
+      <div className="mb-6 grid gap-4 lg:grid-cols-2">
+        <RenderPanel />
+        <VercelPanel />
+      </div>
+      <h2 className="mb-3 text-headline">GitHub</h2>
       <Loadable state={state} what="os deployments">
         {({ connected, pipelines }) =>
           !connected ? (

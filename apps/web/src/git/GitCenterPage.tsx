@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router'
 import { GitBranch, Unplug } from 'lucide-react'
 import { primaryButton, secondaryButton } from '../components/formStyles'
 import { request } from '../session'
+import { LocalFolders } from './LocalFolders'
 import { RepositoriesSection } from './RepositoriesSection'
 
 interface Status {
@@ -123,6 +124,7 @@ export function GitCenterPage() {
       </section>
 
       {status?.integration?.status === 'connected' && <RepositoriesSection />}
+      <LocalFolders />
     </div>
   )
 }

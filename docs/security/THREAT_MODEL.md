@@ -62,6 +62,15 @@ Phase column: when the mitigation must exist, at the latest.
 | S, T   | Forged or replayed webhooks          | Verify `X-Hub-Signature-256` with constant-time compare; dedupe by delivery id                                                                                                                               | 2     |
 | D      | Rate limit exhaustion across clients | Cache and dedupe GitHub calls server-side; respect rate limit headers; incremental sync                                                                                                                      | 2     |
 
+### B2 ↔ B4: Render, Vercel, Neon API keys (Phase 4)
+
+| STRIDE | Threat                             | Mitigation                                                                                                                                                                                                            | Phase |
+| ------ | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| I      | Key leak from DB, logs or UI       | Done: same AES-256-GCM storage as GitHub; the key is validated against the provider once, then never returned; the input is `type=password` with autocomplete off                                                     | 4     |
+| E      | Keys allow writes (deploy, delete) | These providers have no read-only personal keys. DevHub calls GET endpoints only (`apps/api/src/providers/providers.ts`); the UI says disconnect only forgets the key and tells the user to delete it at the provider | 4     |
+| I, E   | SSRF via provider base URL         | Done: base URLs are fixed in server config (`*_API_BASE` overrides exist for tests), never user input; resource ids are URL-encoded into paths                                                                        | 4     |
+| D      | Rate limits                        | Done: 60 s cache per workspace and provider; at most 10 services/projects and 3 deploys each per read; 10 s timeout                                                                                                   | 4     |
+
 ### B2 → B5: monitored URLs (Phase 2)
 
 | STRIDE | Threat                                                               | Mitigation                                                                                                                                                                                                                                                                                                                                                 | Phase |
@@ -80,16 +89,17 @@ Phase column: when the mitigation must exist, at the latest.
 
 ### B6: local agent (Phase 5) and desktop (Phase 3)
 
-Highest risk in the product. Detailed design goes in `docs/security/AGENT_SECURITY.md` before any agent code.
+Highest risk in the product. The agent design is `docs/decisions/0007-local-agent.md` (`apps/api/src/agent/`, `apps/desktop/src-tauri/src/agent.rs`).
 
-| STRIDE | Threat                                          | Mitigation (from `MASTER_PLAN.md` §08, §32)                                                        | Phase |
-| ------ | ----------------------------------------------- | -------------------------------------------------------------------------------------------------- | ----- |
-| E      | Remote command execution through the agent      | Typed actions only (`git.status`, …), no shell strings; allowlist; check in API and again in agent | 5     |
-| T      | Command injection, path traversal               | Arguments as arrays to `execFile`-style APIs; paths resolved and confined to authorized projects   | 5     |
-| S      | Rogue device or stolen agent token              | Device pairing, per-device identity, short-lived tokens, revocation                                | 5     |
-| T      | Replay of an authorized action                  | Nonce and expiry per request                                                                       | 5     |
-| E      | Prompt injection makes AI trigger agent actions | AI output never bypasses authorization; sensitive actions need user confirmation                   | 5–6   |
-| E      | Remote web content gains Tauri IPC              | Minimal capabilities, no IPC for remote origins, CSP, signed and verified updates                  | 3     |
+| STRIDE | Threat                                              | Mitigation (from `MASTER_PLAN.md` §08, §32)                                                                                                                                                                                                                                                        | Phase |
+| ------ | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| E      | Remote command execution through the agent          | Done: three typed read actions (`git.status`, `docker.listContainers`, `tools.list`); the API checks the action against the device's enabled capabilities and validates params; the agent checks its own allowlist and the server list again                                                       | 5     |
+| T      | Command injection, path traversal                   | Done: arguments as arrays, no shell; `git.status` paths must be in the folders the device reported (API) and exactly match an authorized folder (agent)                                                                                                                                            | 5     |
+| S      | Rogue device or stolen agent token                  | Done: single-use 10-minute pairing code; per-device secret in the OS credential store, hashed on the server; 10-minute HMAC access tokens; deleting the device revokes at the next request                                                                                                         | 5     |
+| T      | Replay of an authorized action                      | Done: each job is claimed once, expires after 60 s and accepts one result from the claiming device                                                                                                                                                                                                 | 5     |
+| E      | Prompt injection makes AI trigger agent actions     | AI output never bypasses authorization; sensitive actions need user confirmation                                                                                                                                                                                                                   | 5–6   |
+| E      | Remote web content gains Tauri IPC                  | Done (`apps/desktop/src-tauri/src/lib.rs`): IPC only for the build-time `DEVHUB_URL` origin through one runtime capability; plugin commands not granted to JS; other origins open in the system browser (GitHub OAuth pages excepted, without IPC). Pending: signed installer and verified updates | 3     |
+| T, E   | Desktop command reaches arbitrary paths or programs | Done: folder commands act only on paths the user picked in the native dialog (exact match); open targets are a closed enum; arguments passed as arrays, no shell                                                                                                                                   | 3     |
 
 ### Supply chain (all phases)
 

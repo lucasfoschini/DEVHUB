@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { AgentController, AgentGuard, AgentService, DevicesController } from './agent/agent.js'
 import { AuditService } from './audit/audit.service.js'
 import { AUTH, createAuth } from './auth/auth.js'
 import { SessionGuard } from './auth/session.guard.js'
@@ -24,6 +25,7 @@ import { SecretsController } from './secrets/secrets.controller.js'
 import { SecretsService } from './secrets/secrets.service.js'
 import { ServersController, ServersService } from './servers/servers.js'
 import { PrismaService } from './prisma.service.js'
+import { ProvidersController, ProvidersService } from './providers/providers.js'
 import { ProjectsController } from './projects/projects.controller.js'
 import { ProjectsService } from './projects/projects.service.js'
 import { MeController } from './workspaces/me.controller.js'
@@ -48,6 +50,9 @@ export { ENV }
     AutomationsController,
     DeploymentsController,
     AnalyticsController,
+    ProvidersController,
+    DevicesController,
+    AgentController,
   ],
   providers: [
     { provide: ENV, useFactory: () => loadEnv() },
@@ -78,6 +83,9 @@ export { ENV }
     AutomationsService,
     DeploymentsService,
     AnalyticsService,
+    ProvidersService,
+    AgentService,
+    AgentGuard,
   ],
 })
 export class AppModule {}

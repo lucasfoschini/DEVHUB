@@ -13,8 +13,12 @@ interface Automation {
   id: string
   name: string
   trigger: string
-  url: string
+  condition: string | null
+  intervalMinutes: number | null
+  action: 'webhook' | 'notification'
+  url: string | null
   format: 'generic' | 'slack' | 'discord'
+  message: string | null
   enabled: boolean
   runs: { status: RunStatus; createdAt: string }[]
 }
@@ -28,16 +32,36 @@ interface Run {
   finishedAt: string | null
 }
 
-const TRIGGERS: Record<string, string> = {
+const EVENTS: Record<string, string> = {
   'monitor.down': 'Monitor fora do ar',
   'monitor.recovered': 'Monitor recuperado',
   'integration.needs_reconnect': 'Integração desconectada',
 }
+const TRIGGERS: Record<string, string> = {
+  ...EVENTS,
+  schedule: 'Agendado (a cada N minutos)',
+  manual: 'Manual (botão Executar)',
+}
+const ACTIONS = { webhook: 'Enviar webhook', notification: 'Notificação no DevHub' } as const
 const FORMATS = { generic: 'JSON do DevHub', slack: 'Slack', discord: 'Discord' } as const
 const RUN_META: Record<RunStatus, { label: string; color: string }> = {
   pending: { label: 'Na fila', color: 'text-pending' },
   succeeded: { label: 'Entregue', color: 'text-success' },
   failed: { label: 'Falhou', color: 'text-error' },
+}
+
+/** "Monitor fora do ar · contém “api” → Slack · hooks.slack.com" */
+function describe(a: Automation) {
+  const when =
+    a.trigger === 'schedule'
+      ? `A cada ${a.intervalMinutes} min`
+      : (TRIGGERS[a.trigger] ?? a.trigger)
+  const cond = a.condition ? ` · contém “${a.condition}”` : ''
+  const then =
+    a.action === 'notification'
+      ? 'Notificação no DevHub'
+      : `${FORMATS[a.format]} · ${a.url ? new URL(a.url).host : ''}`
+  return `${when}${cond} → ${then}`
 }
 
 function RunStatusLabel({ status }: { status: RunStatus }) {
@@ -53,22 +77,31 @@ function RunStatusLabel({ status }: { status: RunStatus }) {
 function CreateForm(props: { onDone: () => void; onCancel: () => void }) {
   const id = useId()
   const [error, setError] = useState<string | null>(null)
+  const [trigger, setTrigger] = useState('monitor.down')
+  const [action, setAction] = useState<keyof typeof ACTIONS>('webhook')
+  const isEvent = trigger in EVENTS
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const f = new FormData(e.currentTarget)
+    const opt = (k: string) => (f.get(k) ? String(f.get(k)) : null)
     const res = await request('POST', '/api/automations', {
       name: String(f.get('name')),
-      trigger: String(f.get('trigger')),
-      format: String(f.get('format')),
-      url: String(f.get('url')),
+      trigger,
+      action,
+      condition: isEvent ? opt('condition') : null,
+      intervalMinutes: trigger === 'schedule' ? Number(f.get('interval')) : null,
+      message: opt('message'),
+      ...(action === 'webhook' && { format: String(f.get('format')), url: String(f.get('url')) }),
     })
     if (res.ok) props.onDone()
     else
       setError(
         res.status === 409
           ? 'Já existe uma automação com esse nome.'
-          : 'Use uma URL http(s) sem usuário e senha.',
+          : action === 'webhook'
+            ? 'Use uma URL http(s) sem usuário e senha.'
+            : 'Confira os campos.',
       )
   }
 
@@ -82,7 +115,12 @@ function CreateForm(props: { onDone: () => void; onCancel: () => void }) {
         <input id={`${id}-name`} name="name" required maxLength={80} className={inputClass} />
       </Field>
       <Field id={`${id}-trigger`} label="Quando">
-        <select id={`${id}-trigger`} name="trigger" className={inputClass}>
+        <select
+          id={`${id}-trigger`}
+          value={trigger}
+          onChange={(e) => setTrigger(e.target.value)}
+          className={inputClass}
+        >
           {Object.entries(TRIGGERS).map(([k, label]) => (
             <option key={k} value={k}>
               {label}
@@ -90,30 +128,78 @@ function CreateForm(props: { onDone: () => void; onCancel: () => void }) {
           ))}
         </select>
       </Field>
-      <Field
-        id={`${id}-url`}
-        label="Enviar POST para"
-        hint="Endereços de rede privada são bloqueados na entrega."
-      >
-        <input
-          id={`${id}-url`}
-          name="url"
-          type="url"
-          required
-          maxLength={2048}
-          placeholder="https://hooks.slack.com/services/…"
-          className={`${inputClass} font-mono`}
-        />
-      </Field>
-      <Field id={`${id}-format`} label="Formato">
-        <select id={`${id}-format`} name="format" className={inputClass}>
-          {Object.entries(FORMATS).map(([k, label]) => (
+      {isEvent ? (
+        <Field
+          id={`${id}-condition`}
+          label="Só se o aviso contiver (opcional)"
+          hint="Texto no título ou na descrição, sem diferenciar maiúsculas."
+        >
+          <input id={`${id}-condition`} name="condition" maxLength={200} className={inputClass} />
+        </Field>
+      ) : trigger === 'schedule' ? (
+        <Field id={`${id}-interval`} label="Intervalo (minutos)" hint="De 5 a 1440.">
+          <input
+            id={`${id}-interval`}
+            name="interval"
+            type="number"
+            required
+            min={5}
+            max={1440}
+            defaultValue={60}
+            className={inputClass}
+          />
+        </Field>
+      ) : (
+        <div />
+      )}
+      <Field id={`${id}-action`} label="Então">
+        <select
+          id={`${id}-action`}
+          value={action}
+          onChange={(e) => setAction(e.target.value as keyof typeof ACTIONS)}
+          className={inputClass}
+        >
+          {Object.entries(ACTIONS).map(([k, label]) => (
             <option key={k} value={k}>
               {label}
             </option>
           ))}
         </select>
       </Field>
+      <Field
+        id={`${id}-message`}
+        label={isEvent ? 'Título no lugar do aviso (opcional)' : 'Mensagem (opcional)'}
+      >
+        <input id={`${id}-message`} name="message" maxLength={200} className={inputClass} />
+      </Field>
+      {action === 'webhook' && (
+        <>
+          <Field
+            id={`${id}-url`}
+            label="Enviar POST para"
+            hint="Endereços de rede privada são bloqueados na entrega."
+          >
+            <input
+              id={`${id}-url`}
+              name="url"
+              type="url"
+              required
+              maxLength={2048}
+              placeholder="https://hooks.slack.com/services/…"
+              className={`${inputClass} font-mono`}
+            />
+          </Field>
+          <Field id={`${id}-format`} label="Formato">
+            <select id={`${id}-format`} name="format" className={inputClass}>
+              {Object.entries(FORMATS).map(([k, label]) => (
+                <option key={k} value={k}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </>
+      )}
       <div className="flex items-center gap-2 md:col-span-2">
         <button type="submit" className={primaryButton}>
           Criar automação
@@ -193,15 +279,19 @@ function AutomationRow({ a, onChange }: { a: Automation; onChange: () => void })
   const switchId = useId()
   const last = a.runs[0]
 
+  const runNow = a.trigger === 'schedule' || a.trigger === 'manual'
+
   async function test() {
-    setNotice('Enviando teste…')
+    setNotice(runNow ? 'Executando…' : 'Enviando teste…')
     const res = await request<Run>('POST', `/api/automations/${a.id}/test`)
     const r = res.data
     setNotice(
       !res.ok
         ? 'Não foi possível enviar o teste.'
         : r.status === 'succeeded'
-          ? `Teste entregue (HTTP ${r.statusCode}).`
+          ? r.statusCode === null
+            ? 'Notificação criada.'
+            : `${runNow ? 'Executado' : 'Teste entregue'} (HTTP ${r.statusCode}).`
           : `Falhou: ${r.statusCode ? `HTTP ${r.statusCode}` : (ERROR_LABEL[r.error ?? ''] ?? r.error)}. Novas tentativas em 30 s.`,
     )
     setOpen(true)
@@ -214,10 +304,7 @@ function AutomationRow({ a, onChange }: { a: Automation; onChange: () => void })
         <Workflow size={16} aria-hidden className="text-tertiary" />
         <span className="min-w-0 flex-1">
           <span className="block font-medium">{a.name}</span>
-          <span className="block truncate text-caption text-secondary">
-            {TRIGGERS[a.trigger] ?? a.trigger} → {FORMATS[a.format]} ·{' '}
-            <span className="font-mono">{new URL(a.url).host}</span>
-          </span>
+          <span className="block truncate text-caption text-secondary">{describe(a)}</span>
         </span>
         {last && <RunStatusLabel status={last.status} />}
         <span className="flex items-center gap-2">
@@ -237,7 +324,7 @@ function AutomationRow({ a, onChange }: { a: Automation; onChange: () => void })
         </span>
         <span className="flex items-center gap-1">
           <button type="button" className={rowButton} onClick={() => void test()}>
-            <Send size={14} aria-hidden /> Testar
+            <Send size={14} aria-hidden /> {runNow ? 'Executar agora' : 'Testar'}
             <span className="sr-only"> {a.name}</span>
           </button>
           <button
@@ -280,8 +367,8 @@ function AutomationRow({ a, onChange }: { a: Automation; onChange: () => void })
   )
 }
 
-/** Automations (MASTER_PLAN §7.9), first trigger/action pair: DevHub events → webhook, with
- *  retries and a delivery history. A visual workflow editor is out of the MVP scope (§39). */
+/** Automations (MASTER_PLAN §7.9): trigger (event, schedule, manual) → optional text condition →
+ *  action (webhook with retries, or in-app notification), with a run history. */
 export function AutomationsPage() {
   const state = useApi<Automation[]>('/api/automations')
   const [creating, setCreating] = useState(false)
@@ -289,7 +376,7 @@ export function AutomationsPage() {
   return (
     <PageShell
       title="Automações"
-      subtitle="Quando algo acontece no DevHub, envie um webhook para Slack, Discord ou qualquer URL."
+      subtitle="Gatilho, condição e ação: avise no DevHub ou envie um webhook para Slack, Discord ou qualquer URL."
       action={
         !creating && (
           <button type="button" className={primaryButton} onClick={() => setCreating(true)}>

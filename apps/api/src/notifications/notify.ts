@@ -35,8 +35,72 @@ export function webhookPayload(
   })
 }
 
-/** Creates a notification unless the workspace muted its kind, and queues the webhook runs of
- *  enabled automations for that kind (outbox: same transaction, delivered by a worker).
+/** Event triggers fire only when the condition text appears in the title or body. */
+export function matches(condition: string | null, event: { title: string; body?: string }) {
+  if (!condition) return true
+  return `${event.title}\n${event.body ?? ''}`.toLowerCase().includes(condition.toLowerCase())
+}
+
+/** Kind of the notifications the notification action creates. Not a trigger, so an automation
+ *  can never fire another one (no loops). */
+export const AUTOMATION_KIND = 'automation'
+
+export interface Firing {
+  id: string
+  workspaceId: string
+  action: string
+  format: string
+  message: string | null
+}
+export interface AutomationEvent {
+  kind: string
+  severity: 'info' | 'success' | 'warning' | 'critical'
+  title: string
+  body?: string
+  href?: string | null
+}
+
+/** Runs one automation's action. Webhooks are queued for the worker (outbox) unless `claimed`,
+ *  in which case the caller delivers. The notification action completes here. */
+export async function fire(
+  db: Pick<Prisma.TransactionClient, 'notification' | 'automationRun'>,
+  a: Firing,
+  event: AutomationEvent,
+  claimed = false,
+) {
+  const title = a.message || event.title
+  if (a.action === 'notification') {
+    await db.notification.create({
+      data: {
+        workspaceId: a.workspaceId,
+        kind: AUTOMATION_KIND,
+        severity: event.severity,
+        title: title.slice(0, 200),
+        body: event.body ?? '',
+        href: event.href ?? '/automations',
+      },
+    })
+    return db.automationRun.create({
+      data: {
+        automationId: a.id,
+        payload: JSON.stringify({ title, body: event.body ?? '' }),
+        status: 'succeeded',
+        attempts: 1,
+        finishedAt: new Date(),
+      },
+    })
+  }
+  return db.automationRun.create({
+    data: {
+      automationId: a.id,
+      attempts: claimed ? 1 : 0,
+      payload: webhookPayload(a.format, { ...event, kind: event.kind as NotificationKind, title }),
+    },
+  })
+}
+
+/** Creates a notification unless the workspace muted its kind, and fires the enabled
+ *  automations for that kind whose condition matches (outbox: same transaction).
  *  Automations fire even when the in-app notification is muted. */
 export async function notify(db: Db, { data }: { data: Data }) {
   const ws = await db.workspace.findUnique({
@@ -47,10 +111,16 @@ export async function notify(db: Db, { data }: { data: Data }) {
 
   const automations = await db.automation.findMany({
     where: { workspaceId: data.workspaceId, trigger: data.kind, enabled: true },
-    select: { id: true, format: true },
+    select: {
+      id: true,
+      workspaceId: true,
+      action: true,
+      format: true,
+      message: true,
+      condition: true,
+    },
   })
-  if (automations.length === 0) return
-  await db.automationRun.createMany({
-    data: automations.map((a) => ({ automationId: a.id, payload: webhookPayload(a.format, data) })),
-  })
+  for (const a of automations) {
+    if (matches(a.condition, data)) await fire(db, a, data)
+  }
 }

@@ -1,0 +1,10 @@
+{
+  "extends": "@devhub/typescript-config/node.json",
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"],
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "rewriteRelativeImportExtensions": true
+  }
+}

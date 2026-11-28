@@ -160,6 +160,59 @@ test('automations: test delivery is recorded in the history', async () => {
   assert.equal((await api(other, 'GET', `/automations/${a.id}/runs`)).status, 404)
 })
 
+test('automations: workflow rules, manual notification action, schedule', async () => {
+  const cookie = await signUp('auto-flow')
+  const create = (body: object) => api(cookie, 'POST', '/automations', body)
+  assert.equal((await create({ name: 'no url', trigger: 'manual' })).status, 400)
+  assert.equal(
+    (await create({ name: 'no interval', trigger: 'schedule', action: 'notification' })).status,
+    400,
+  )
+
+  // Fields that do not apply to the trigger or action are cleared.
+  const manual = await json<{ id: string; condition: string | null; url: string | null }>(
+    await create({
+      name: 'Lembrete',
+      trigger: 'manual',
+      action: 'notification',
+      condition: 'ignored',
+      url: `${hook}/ok`,
+      message: 'Revisar deploys',
+    }),
+  )
+  assert.deepEqual([manual.condition, manual.url], [null, null])
+  const run = await json<{ status: string }>(
+    await api(cookie, 'POST', `/automations/${manual.id}/test`),
+  )
+  assert.equal(run.status, 'succeeded')
+  const inbox = await json<{ items: { title: string }[] }>(
+    await api(cookie, 'GET', '/notifications'),
+  )
+  assert.ok(inbox.items.some((n) => n.title === 'Revisar deploys'))
+
+  // A switch to webhook must bring a URL.
+  assert.equal(
+    (await api(cookie, 'PATCH', `/automations/${manual.id}`, { action: 'webhook' })).status,
+    400,
+  )
+
+  // A new schedule fires on the next worker tick (5 s).
+  const scheduled = await json<{ id: string }>(
+    await create({
+      name: 'A cada 5 min',
+      trigger: 'schedule',
+      intervalMinutes: 5,
+      action: 'notification',
+    }),
+  )
+  let runs: unknown[] = []
+  for (let i = 0; i < 20 && runs.length === 0; i++) {
+    await new Promise((r) => setTimeout(r, 500))
+    runs = await json(await api(cookie, 'GET', `/automations/${scheduled.id}/runs`))
+  }
+  assert.equal(runs.length, 1)
+})
+
 test('deployments: read from GitHub for imported repositories', async () => {
   const cookie = await signUp('deploy')
   assert.deepEqual(await (await api(cookie, 'GET', '/deployments')).json(), {

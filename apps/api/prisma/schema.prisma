@@ -404,12 +404,21 @@ model Automation {
   workspaceId String
   workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   name        String
-  /// A notification kind (notifications/notify.ts).
-  trigger     String
-  /// Webhook URL (http/https, public address only).
-  url         String
+  /// A notification kind (notifications/notify.ts), "schedule" or "manual".
+  trigger         String
+  /// Event triggers only: runs when title or body contains this text (case-insensitive).
+  condition       String?
+  /// Schedule trigger only: minutes between runs.
+  intervalMinutes Int?
+  lastFiredAt     DateTime?
+  /// webhook | notification (in-app, never re-enters automations).
+  action          String          @default("webhook")
+  /// Webhook URL (http/https, public address only). Null for the notification action.
+  url             String?
   /// generic (DevHub JSON) | slack | discord: body shape the receiver expects.
-  format      String          @default("generic")
+  format          String          @default("generic")
+  /// Replaces the event title when set; the title of schedule and manual runs.
+  message         String?
   enabled     Boolean         @default(true)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
@@ -417,6 +426,7 @@ model Automation {
 
   @@unique([workspaceId, name])
   @@index([workspaceId, trigger])
+  @@index([trigger, enabled])
   @@map("automation")
 }
 

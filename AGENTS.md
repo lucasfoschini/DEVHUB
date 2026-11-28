@@ -28,6 +28,7 @@ pnpm build
 pnpm format
 pnpm desktop:dev                        # Tauri window on the running web app (needs pnpm dev)
 pnpm --filter @devhub/desktop desktop:test   # Rust unit tests
+pnpm --filter @devhub/cli build && node apps/cli/dist/cli.js help   # devhub CLI
 ```
 
 A change is not done until `typecheck`, `lint`, `test`, `format:check` and `build` pass.
@@ -50,6 +51,7 @@ A change is not done until `typecheck`, `lint`, `test`, `format:check` and `buil
 
 ```text
 apps/api/                    NestJS API: auth, workspaces, audit (prisma/ holds schema + migrations)
+apps/cli/                    devhub CLI (ADR 0009): session in ~/.devhub, talks to the web origin
 apps/desktop/                Tauri 2 shell (src-tauri/: Rust commands, tray, runtime capability)
 apps/web/                    React + Vite app (shell + prototype)
   src/shell/                 Application Shell (see docs/design/APPLICATION_SHELL.md)

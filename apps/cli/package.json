@@ -1,0 +1,19 @@
+{
+  "name": "@devhub/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "devhub": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test \"src/**/*.test.ts\""
+  },
+  "devDependencies": {
+    "@devhub/typescript-config": "workspace:*",
+    "@types/node": "22.20.7",
+    "typescript": "6.0.3"
+  }
+}

@@ -15,6 +15,9 @@ fn main() {
             "agent_status",
             "agent_pair",
             "agent_unpair",
+            "docs_list",
+            "docs_read",
+            "ai_inventory",
         ]),
     ))
     .expect("failed to run tauri-build");

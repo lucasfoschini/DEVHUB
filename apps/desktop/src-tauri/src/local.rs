@@ -167,41 +167,40 @@ pub struct Tool {
 
 /// Which developer tools are installed, by asking each for its version.
 pub fn tools() -> Vec<Tool> {
-    let probe: [(&str, &str, &str); 5] = [
+    let probe: [(&str, &str, &str); 8] = [
         ("git", "Git", "git"),
         ("node", "Node.js", "node"),
         ("docker", "Docker", "docker"),
-        (
-            "vscode",
-            "VS Code",
-            if cfg!(windows) { "code.cmd" } else { "code" },
-        ),
-        (
-            "cursor",
-            "Cursor",
-            if cfg!(windows) {
-                "cursor.cmd"
-            } else {
-                "cursor"
-            },
-        ),
+        ("claude", "Claude Code", "claude"),
+        ("codex", "Codex", "codex"),
+        ("ollama", "Ollama", "ollama"),
+        ("vscode", "VS Code", "code"),
+        ("cursor", "Cursor", "cursor"),
     ];
+    let version = |program: &str| {
+        command(program)
+            .arg("--version")
+            .output()
+            .ok()
+            .filter(|o| o.status.success())
+            .and_then(|o| {
+                String::from_utf8_lossy(&o.stdout)
+                    .lines()
+                    .next()
+                    .map(|l| l.trim().to_string())
+            })
+    };
     probe
         .iter()
         .map(|(id, label, program)| Tool {
             id,
             label,
-            version: command(program)
-                .arg("--version")
-                .output()
-                .ok()
-                .filter(|o| o.status.success())
-                .and_then(|o| {
-                    String::from_utf8_lossy(&o.stdout)
-                        .lines()
-                        .next()
-                        .map(|l| l.trim().to_string())
-                }),
+            // Native installers ship an .exe; npm and VS Code-style installs ship a .cmd shim.
+            version: version(program).or_else(|| {
+                cfg!(windows)
+                    .then(|| version(&format!("{program}.cmd")))
+                    .flatten()
+            }),
         })
         .collect()
 }

@@ -6,6 +6,7 @@ import { Field, Loadable, PageShell, Panel } from '../components/page'
 import { formatDate, rowButton, useApi } from '../components/page-utils'
 import type { Project } from '../projects/projects'
 import { request } from '../session'
+import { LocalDocs } from './LocalDocs'
 import { parseMarkdown, type Block, type Inline } from './markdown'
 
 interface NoteSummary {
@@ -408,6 +409,7 @@ export function KnowledgePage() {
           )}
         </Panel>
       </div>
+      <LocalDocs onImported={saved} />
     </PageShell>
   )
 }

@@ -40,6 +40,25 @@ export interface AgentStatus {
   running: boolean
 }
 
+export interface DocFile {
+  /** Relative to the folder, with / separators. */
+  rel: string
+  size: number
+  /** Unix milliseconds. */
+  modified: number
+}
+
+export interface AiInventory {
+  skills: {
+    name: string
+    description: string
+    scope: 'global' | 'plugin' | 'project'
+    source: string
+    path: string
+  }[]
+  sessions: { project: string; sessions: number; bytes: number; lastActivity: number }[]
+}
+
 export type OpenTarget = 'explorer' | 'vscode' | 'cursor' | 'terminal'
 
 interface Commands {
@@ -55,6 +74,9 @@ interface Commands {
   agent_status: [Record<string, never>, AgentStatus]
   agent_pair: [{ code: string }, null]
   agent_unpair: [Record<string, never>, null]
+  docs_list: [{ path: string }, DocFile[]]
+  docs_read: [{ path: string; rel: string }, string]
+  ai_inventory: [Record<string, never>, AiInventory]
 }
 
 type RawInvoke = (cmd: string, args?: object) => Promise<unknown>

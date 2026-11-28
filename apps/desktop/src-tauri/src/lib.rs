@@ -3,6 +3,7 @@
 //! and only the typed commands below.
 
 mod agent;
+mod knowledge;
 mod local;
 
 use serde::Serialize;
@@ -24,7 +25,7 @@ const DEVHUB_URL: &str = match option_env!("DEVHUB_URL") {
     None => "http://localhost:5173",
 };
 
-const COMMANDS: [&str; 12] = [
+const COMMANDS: [&str; 15] = [
     "folders_list",
     "folders_add",
     "folders_remove",
@@ -37,6 +38,9 @@ const COMMANDS: [&str; 12] = [
     "agent_status",
     "agent_pair",
     "agent_unpair",
+    "docs_list",
+    "docs_read",
+    "ai_inventory",
 ];
 
 /// Folders the user picked in the native dialog. Commands only act on these exact paths.
@@ -179,6 +183,37 @@ fn agent_unpair(agent: State<agent::Agent>) {
     agent::unpair(&agent);
 }
 
+#[tauri::command]
+async fn docs_list(
+    path: String,
+    folders: State<'_, Folders>,
+) -> Result<Vec<knowledge::DocFile>, String> {
+    folders.authorized(&path)?;
+    tauri::async_runtime::spawn_blocking(move || knowledge::docs_list(&path))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn docs_read(
+    path: String,
+    rel: String,
+    folders: State<'_, Folders>,
+) -> Result<String, String> {
+    folders.authorized(&path)?;
+    tauri::async_runtime::spawn_blocking(move || knowledge::docs_read(&path, &rel))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn ai_inventory(folders: State<'_, Folders>) -> Result<knowledge::Inventory, String> {
+    let list = folders.list.lock().unwrap().clone();
+    tauri::async_runtime::spawn_blocking(move || knowledge::ai_inventory(&list))
+        .await
+        .map_err(|e| e.to_string())
+}
+
 fn clip(s: &str, max: usize) -> String {
     s.chars().take(max).collect()
 }
@@ -255,7 +290,10 @@ pub fn run() {
             docker_containers,
             agent_status,
             agent_pair,
-            agent_unpair
+            agent_unpair,
+            docs_list,
+            docs_read,
+            ai_inventory
         ])
         .setup(move |app| {
             let data = app.path().app_data_dir()?;

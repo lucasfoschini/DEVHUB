@@ -5,6 +5,7 @@ import { Field, Loadable, PageShell, Panel } from '../components/page'
 import { formatDate, rowButton, useApi } from '../components/page-utils'
 import type { Project } from '../projects/projects'
 import { request } from '../session'
+import { LocalInventory } from './LocalInventory'
 
 interface Prompt {
   id: string
@@ -336,6 +337,7 @@ export function AiCenterPage() {
           )
         }}
       </Loadable>
+      <LocalInventory />
     </PageShell>
   )
 }

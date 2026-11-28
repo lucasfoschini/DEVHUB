@@ -42,6 +42,10 @@ const PER_ITEM = 3
 class ProviderAuthError extends Error {}
 
 const providerParam = z.enum(PROVIDERS)
+/** Render service ids (srv-…) and Vercel deployment ids (dpl_…). */
+const resourceId = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/)
+const MAX_LINES = 100
+const MAX_LINE = 2000
 const connectBody = z.object({
   token: z.string().trim().min(8).max(512).regex(/^\S+$/, 'A chave não pode ter espaços'),
 })
@@ -89,6 +93,106 @@ interface NeonBranch {
   primary?: boolean
   logical_size?: number
   updated_at: string
+}
+
+interface RenderLog {
+  id: string
+  message: string
+  timestamp: string
+  labels?: { name: string; value: string }[]
+}
+interface RenderSeries {
+  labels?: { field: string; value: string }[]
+  unit?: string
+  values?: { timestamp: string; value: number }[]
+}
+interface VercelEvent {
+  type: string
+  created: number
+  id?: string
+  serial?: string
+  text?: string
+  level?: string
+  payload?: { id?: string; text?: string }
+}
+
+/** Detail reads for one resource, in DevHub's shape. Text is capped per line. */
+const details = {
+  /** The last lines of a Render service. The service lookup proves the key can see it and gives
+   *  the workspace id (ownerId) the logs endpoint requires. */
+  async renderLogs(get: Fetcher, id: string) {
+    const service = await get<{ id: string; ownerId: string }>(
+      `/v1/services/${encodeURIComponent(id)}`,
+    )
+    const q = new URLSearchParams({
+      ownerId: service.ownerId,
+      resource: service.id,
+      direction: 'backward',
+      limit: String(MAX_LINES),
+    })
+    const { logs } = await get<{ logs: RenderLog[] }>(`/v1/logs?${q}`)
+    const label = (l: RenderLog, name: string) =>
+      l.labels?.find((x) => x.name === name)?.value ?? null
+    return {
+      lines: logs
+        .map((l) => ({
+          id: l.id,
+          at: l.timestamp,
+          level: label(l, 'level'),
+          source: label(l, 'type'),
+          text: l.message.slice(0, MAX_LINE),
+        }))
+        .sort((a, b) => a.at.localeCompare(b.at)),
+    }
+  },
+
+  /** CPU, memory and HTTP requests over the last hour in 5-minute steps, unit as Render sends it. */
+  async renderMetrics(get: Fetcher, id: string) {
+    const end = new Date()
+    const q = new URLSearchParams({
+      resource: id,
+      startTime: new Date(end.getTime() - 3_600_000).toISOString(),
+      endTime: end.toISOString(),
+      resolutionSeconds: '300',
+    })
+    const metric = async (name: 'cpu' | 'memory' | 'http-requests') =>
+      (await get<RenderSeries[]>(`/v1/metrics/${name}?${q}`)).map((s) => ({
+        labels: Object.fromEntries((s.labels ?? []).map((l) => [l.field, l.value])),
+        unit: s.unit ?? null,
+        values: (s.values ?? []).map((v) => ({ at: v.timestamp, value: v.value })),
+      }))
+    const [cpu, memory, requests] = await Promise.all([
+      metric('cpu'),
+      metric('memory'),
+      metric('http-requests'),
+    ])
+    return { cpu, memory, requests }
+  },
+
+  /** Build output of a Vercel deployment, oldest first. follow=0 keeps it a JSON reply. */
+  async vercelEvents(get: Fetcher, id: string) {
+    const events = await get<VercelEvent[]>(
+      `/v3/deployments/${encodeURIComponent(id)}/events?builds=1&direction=backward&follow=0&limit=${MAX_LINES}`,
+    )
+    return {
+      lines: events
+        .map((e, i) => ({
+          id: e.id ?? e.payload?.id ?? e.serial ?? String(i),
+          at: new Date(e.created).toISOString(),
+          level: e.level ?? (e.type === 'stderr' || e.type === 'fatal' ? 'error' : null),
+          source: e.type,
+          text: (e.text ?? e.payload?.text ?? '').slice(0, MAX_LINE),
+        }))
+        .filter((l) => l.text)
+        .sort((a, b) => a.at.localeCompare(b.at)),
+    }
+  },
+}
+type Detail = keyof typeof details
+const DETAIL_PROVIDER: Record<Detail, Provider> = {
+  renderLogs: 'render',
+  renderMetrics: 'render',
+  vercelEvents: 'vercel',
 }
 
 /** Who the key belongs to, asked once at connect time; a failure means the key is not valid. */
@@ -210,6 +314,11 @@ export class ProvidersService {
     @Inject(ENV_TOKEN) private readonly env: Env,
   ) {}
 
+  private forget(workspaceId: string, provider: Provider) {
+    const prefix = `${workspaceId}:${provider}:`
+    for (const k of this.cache.keys()) if (k.startsWith(prefix)) this.cache.delete(k)
+  }
+
   private get key() {
     if (!this.env.encryptionKey) throw new ServiceUnavailableException('ENCRYPTION_KEY is not set')
     return this.env.encryptionKey
@@ -222,6 +331,7 @@ export class ProvidersService {
         signal: AbortSignal.timeout(TIMEOUT_MS),
       })
       if (res.status === 401 || res.status === 403) throw new ProviderAuthError()
+      if (res.status === 404) throw new NotFoundException()
       if (!res.ok) throw new BadGatewayException(`${LABEL[provider]} answered HTTP ${res.status}`)
       return (await res.json()) as T
     }
@@ -266,7 +376,7 @@ export class ProvidersService {
       create: { ...data, workspaceId, provider },
       update: data,
     })
-    this.cache.delete(`${workspaceId}:${provider}`)
+    this.forget(workspaceId, provider)
     await this.audit.record({
       action: 'integration.connect',
       workspaceId,
@@ -283,7 +393,7 @@ export class ProvidersService {
   async disconnect(workspaceId: string, actorId: string, provider: Provider) {
     const { count } = await this.prisma.integration.deleteMany({ where: { workspaceId, provider } })
     if (count === 0) throw new NotFoundException()
-    this.cache.delete(`${workspaceId}:${provider}`)
+    this.forget(workspaceId, provider)
     await this.audit.record({
       action: 'integration.disconnect',
       workspaceId,
@@ -293,7 +403,23 @@ export class ProvidersService {
     })
   }
 
-  async resources(workspaceId: string, provider: Provider) {
+  resources(workspaceId: string, provider: Provider) {
+    return this.read(workspaceId, provider, 'resources', (get) => resources(provider, get))
+  }
+
+  detail(workspaceId: string, detail: Detail, id: string) {
+    const provider = DETAIL_PROVIDER[detail]
+    return this.read(workspaceId, provider, `${detail}:${id}`, (get) => details[detail](get, id))
+  }
+
+  /** Runs one read with the stored key, cached for a minute per workspace and call. A rejected
+   *  key flips the integration to needs_reconnect. */
+  private async read(
+    workspaceId: string,
+    provider: Provider,
+    what: string,
+    run: (get: Fetcher) => Promise<object>,
+  ) {
     const integration = await this.prisma.integration.findUnique({
       where: { workspaceId_provider: { workspaceId, provider } },
     })
@@ -304,14 +430,11 @@ export class ProvidersService {
         message: `Reconecte ${LABEL[provider]}`,
       })
     if (integration.status !== 'connected') throw reconnect()
-    const cacheKey = `${workspaceId}:${provider}`
+    const cacheKey = `${workspaceId}:${provider}:${what}`
     const hit = this.cache.get(cacheKey)
     if (hit && Date.now() - hit.at < CACHE_MS) return { connected: true, ...(hit.value as object) }
     try {
-      const value = await resources(
-        provider,
-        this.getter(provider, decrypt(integration.encryptedToken, this.key)),
-      )
+      const value = await run(this.getter(provider, decrypt(integration.encryptedToken, this.key)))
       this.cache.set(cacheKey, { at: Date.now(), value })
       return { connected: true, ...value }
     } catch (e) {
@@ -367,6 +490,24 @@ export class ProvidersController {
   async disconnect(@Req() req: AuthedRequest, @Param('provider') p: string) {
     const provider = parse(providerParam, p)
     await this.providers.disconnect(await this.workspaceId(req), req.auth.user.id, provider)
+  }
+
+  @Get('render/services/:id/logs')
+  async renderLogs(@Req() req: AuthedRequest, @Param('id') id: string) {
+    const workspaceId = await this.workspaceId(req)
+    return this.providers.detail(workspaceId, 'renderLogs', parse(resourceId, id))
+  }
+
+  @Get('render/services/:id/metrics')
+  async renderMetrics(@Req() req: AuthedRequest, @Param('id') id: string) {
+    const workspaceId = await this.workspaceId(req)
+    return this.providers.detail(workspaceId, 'renderMetrics', parse(resourceId, id))
+  }
+
+  @Get('vercel/deployments/:id/events')
+  async vercelEvents(@Req() req: AuthedRequest, @Param('id') id: string) {
+    const workspaceId = await this.workspaceId(req)
+    return this.providers.detail(workspaceId, 'vercelEvents', parse(resourceId, id))
   }
 
   @Get(':provider/resources')

@@ -139,8 +139,14 @@ export function AppShell() {
     }
   })
   useEffect(() => {
+    // The desktop app dispatches devhub:spotlight on its global Ctrl+Shift+Space.
+    const openSpotlight = () => setSpotlight(true)
     window.addEventListener('keydown', onShortcut)
-    return () => window.removeEventListener('keydown', onShortcut)
+    window.addEventListener('devhub:spotlight', openSpotlight)
+    return () => {
+      window.removeEventListener('keydown', onShortcut)
+      window.removeEventListener('devhub:spotlight', openSpotlight)
+    }
   }, [])
 
   const commands: SpotlightCommand[] = [

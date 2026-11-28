@@ -18,4 +18,5 @@ Phase 3 adds the desktop app (MASTER_PLAN §05, §38). The web app talks to the 
 
 - The desktop app needs a reachable DevHub web origin; without it the window shows the browser's connection error. A production build needs `DEVHUB_URL` set to the hosted web app.
 - XSS on the DevHub origin would reach the local commands. They are limited to authorized folders and a closed set of programs, with no shell strings.
-- Not yet done: global shortcuts, a signed installer and verified updates, the Docker view, and CI for the Rust crate (`cargo test` and `clippy` run locally).
+- Added 2026-11-27: a global Ctrl+Shift+Space (tauri-plugin-global-shortcut 2.4.1) shows the window and dispatches a `devhub:spotlight` DOM event, so the page gets no event permission. If another app owns the combination, the app runs without it. `docker_containers` lists local containers read only (`docker ps --all --format {{json .}}`). `pnpm --filter @devhub/desktop desktop:build` produces an unsigned NSIS installer.
+- Not yet done: code signing (needs a certificate), verified updates (needs a signing key pair and a release host), and CI for the Rust crate (`cargo test` and `clippy` run locally).

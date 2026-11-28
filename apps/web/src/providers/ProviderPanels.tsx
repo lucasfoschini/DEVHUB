@@ -128,6 +128,144 @@ const external = (href: string, children: ReactNode, where: string) => (
   </a>
 )
 
+interface LogLine {
+  id: string
+  at: string
+  level: string | null
+  source: string | null
+  text: string
+}
+
+const timeOnly = new Intl.DateTimeFormat('pt-BR', { timeStyle: 'medium' })
+
+/** Read-only detail under a row, loaded only while open. Data content: solid surface. */
+function Detail<T>(props: { path: string; label: string; children: (data: T) => ReactNode }) {
+  const state = useApi<{ connected: boolean } & T>(props.path)
+  return (
+    <div className="mx-4 mb-2 rounded-control border border-subtle bg-surface">
+      {state.error !== null ? (
+        <p role="alert" className="px-3 py-2 text-footnote text-error">
+          Não foi possível ler {props.label} (HTTP {state.error || 'rede'}).{' '}
+          <button type="button" className="underline" onClick={state.reload}>
+            Tentar de novo
+          </button>
+        </p>
+      ) : !state.data ? (
+        <p className="px-3 py-2 text-footnote text-secondary">Carregando…</p>
+      ) : (
+        props.children(state.data)
+      )}
+    </div>
+  )
+}
+
+function Lines(props: { path: string; label: string }) {
+  return (
+    <Detail<{ lines: LogLine[] }> path={props.path} label={props.label}>
+      {({ lines }) =>
+        lines.length === 0 ? (
+          <p className="px-3 py-2 text-footnote text-secondary">Nenhuma linha no período.</p>
+        ) : (
+          <ol
+            tabIndex={0}
+            aria-label={props.label}
+            className="max-h-72 overflow-auto px-3 py-2 font-mono text-caption"
+          >
+            {lines.map((l) => (
+              <li
+                key={l.id}
+                className={`whitespace-pre-wrap break-all ${l.level === 'error' ? 'text-error' : ''}`}
+              >
+                <span className="text-secondary">{timeOnly.format(new Date(l.at))} </span>
+                {l.text}
+              </li>
+            ))}
+          </ol>
+        )
+      }
+    </Detail>
+  )
+}
+
+interface Series {
+  labels: Record<string, string>
+  unit: string | null
+  values: { at: string; value: number }[]
+}
+
+const number = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 })
+
+/** Last, min and max of each series Render returns for the last hour. Units are shown as
+ *  Render sends them; nothing is converted. */
+function Metrics(props: { id: string }) {
+  return (
+    <Detail<{ cpu: Series[]; memory: Series[]; requests: Series[] }>
+      path={`/api/providers/render/services/${encodeURIComponent(props.id)}/metrics`}
+      label="métricas do Render"
+    >
+      {(m) => (
+        <table className="w-full text-footnote">
+          <caption className="px-3 pt-2 text-left text-caption text-secondary">
+            Última hora, passos de 5 minutos
+          </caption>
+          <thead className="text-left text-caption text-secondary">
+            <tr>
+              <th className="px-3 py-1 font-medium">Métrica</th>
+              <th className="px-3 py-1 font-medium">Última</th>
+              <th className="px-3 py-1 font-medium">Mín.</th>
+              <th className="px-3 py-1 font-medium">Máx.</th>
+            </tr>
+          </thead>
+          <tbody className="font-mono">
+            {(
+              [
+                ['CPU', m.cpu],
+                ['Memória', m.memory],
+                ['Requisições HTTP', m.requests],
+              ] as const
+            ).flatMap(([name, series]) => {
+              const rows = series.length ? series : [null]
+              return rows.map((s, i) => {
+                const v = s?.values.map((x) => x.value) ?? []
+                const tag = s && Object.values(s.labels).join(' · ')
+                const fmt = (n: number | undefined) =>
+                  n === undefined ? '—' : `${number.format(n)}${s?.unit ? ` ${s.unit}` : ''}`
+                return (
+                  <tr key={`${name}-${i}`} className="border-t border-subtle">
+                    <td className="px-3 py-1 font-sans">
+                      {name}
+                      {tag && <span className="text-secondary"> ({tag})</span>}
+                    </td>
+                    <td className="px-3 py-1">{fmt(v.at(-1))}</td>
+                    <td className="px-3 py-1">{fmt(v.length ? Math.min(...v) : undefined)}</td>
+                    <td className="px-3 py-1">{fmt(v.length ? Math.max(...v) : undefined)}</td>
+                  </tr>
+                )
+              })
+            })}
+          </tbody>
+        </table>
+      )}
+    </Detail>
+  )
+}
+
+/** Toggle buttons for a row's details; only one is open at a time. */
+function useDetailToggle<K extends string>() {
+  const [open, setOpen] = useState<K | null>(null)
+  const toggle = (k: K, label: string) => (
+    <button
+      type="button"
+      className={rowButton}
+      aria-expanded={open === k}
+      onClick={() => setOpen(open === k ? null : k)}
+    >
+      {label}
+    </button>
+  )
+  return [open, toggle] as const
+}
+
 interface RenderService {
   id: string
   name: string
@@ -144,6 +282,44 @@ interface RenderService {
   }[]
 }
 
+function RenderRow({ service: s }: { service: RenderService }) {
+  const [open, toggle] = useDetailToggle<'logs' | 'metrics'>()
+  const last = s.deploys[0]
+  return (
+    <li>
+      <div className="flex items-center gap-3 px-4 py-2 hover:bg-hover">
+        {s.suspended ? (
+          <Status tone="idle">Suspenso</Status>
+        ) : last ? (
+          statusOf(RENDER_STATUS, last.status)
+        ) : (
+          <Status tone="idle">Sem deploy</Status>
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-body">
+            {external(s.dashboardUrl, s.name, 'Render')}
+          </span>
+          <span className="block truncate font-mono text-caption text-secondary">
+            {[s.type, last?.sha, last?.message].filter(Boolean).join(' · ')}
+          </span>
+        </span>
+        <span className="hidden shrink-0 text-caption text-secondary md:inline">
+          {formatDate(last?.createdAt ?? null)}
+        </span>
+        {toggle('logs', 'Logs')}
+        {toggle('metrics', 'Métricas')}
+      </div>
+      {open === 'logs' && (
+        <Lines
+          path={`/api/providers/render/services/${encodeURIComponent(s.id)}/logs`}
+          label={`Logs de ${s.name}`}
+        />
+      )}
+      {open === 'metrics' && <Metrics id={s.id} />}
+    </li>
+  )
+}
+
 export function RenderPanel() {
   return (
     <ProviderSection<{ services: RenderService[] }> provider="render" title="Render">
@@ -152,31 +328,9 @@ export function RenderPanel() {
           <p className="px-4 py-3 text-footnote text-secondary">Nenhum serviço no Render.</p>
         ) : (
           <ul>
-            {services.map((s) => {
-              const last = s.deploys[0]
-              return (
-                <li key={s.id} className="flex items-center gap-3 px-4 py-2 hover:bg-hover">
-                  {s.suspended ? (
-                    <Status tone="idle">Suspenso</Status>
-                  ) : last ? (
-                    statusOf(RENDER_STATUS, last.status)
-                  ) : (
-                    <Status tone="idle">Sem deploy</Status>
-                  )}
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-body">
-                      {external(s.dashboardUrl, s.name, 'Render')}
-                    </span>
-                    <span className="block truncate font-mono text-caption text-secondary">
-                      {[s.type, last?.sha, last?.message].filter(Boolean).join(' · ')}
-                    </span>
-                  </span>
-                  <span className="hidden shrink-0 text-caption text-secondary md:inline">
-                    {formatDate(last?.createdAt ?? null)}
-                  </span>
-                </li>
-              )
-            })}
+            {services.map((s) => (
+              <RenderRow key={s.id} service={s} />
+            ))}
           </ul>
         )
       }
@@ -197,6 +351,39 @@ interface VercelDeployment {
   inspectorUrl: string | null
 }
 
+function VercelRow({ deployment: d }: { deployment: VercelDeployment }) {
+  const [open, toggle] = useDetailToggle<'build'>()
+  return (
+    <li>
+      <div className="flex items-center gap-3 px-4 py-2 hover:bg-hover">
+        {statusOf(VERCEL_STATE, d.state)}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-body">
+            {external(d.inspectorUrl ?? d.url, d.project, 'Vercel')}
+            <span className="text-secondary">
+              {' '}
+              · {d.target === 'production' ? 'Produção' : 'Preview'}
+            </span>
+          </span>
+          <span className="block truncate font-mono text-caption text-secondary">
+            {[d.ref, d.sha, d.message].filter(Boolean).join(' · ')}
+          </span>
+        </span>
+        <span className="hidden shrink-0 text-caption text-secondary md:inline">
+          {formatDate(d.createdAt)}
+        </span>
+        {toggle('build', 'Build')}
+      </div>
+      {open === 'build' && (
+        <Lines
+          path={`/api/providers/vercel/deployments/${encodeURIComponent(d.id)}/events`}
+          label={`Build de ${d.project}`}
+        />
+      )}
+    </li>
+  )
+}
+
 export function VercelPanel() {
   return (
     <ProviderSection<{ deployments: VercelDeployment[] }> provider="vercel" title="Vercel">
@@ -206,24 +393,7 @@ export function VercelPanel() {
         ) : (
           <ul>
             {deployments.map((d) => (
-              <li key={d.id} className="flex items-center gap-3 px-4 py-2 hover:bg-hover">
-                {statusOf(VERCEL_STATE, d.state)}
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-body">
-                    {external(d.inspectorUrl ?? d.url, d.project, 'Vercel')}
-                    <span className="text-secondary">
-                      {' '}
-                      · {d.target === 'production' ? 'Produção' : 'Preview'}
-                    </span>
-                  </span>
-                  <span className="block truncate font-mono text-caption text-secondary">
-                    {[d.ref, d.sha, d.message].filter(Boolean).join(' · ')}
-                  </span>
-                </span>
-                <span className="hidden shrink-0 text-caption text-secondary md:inline">
-                  {formatDate(d.createdAt)}
-                </span>
-              </li>
+              <VercelRow key={d.id} deployment={d} />
             ))}
           </ul>
         )

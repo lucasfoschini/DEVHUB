@@ -13,6 +13,7 @@ use tauri::{
     AppHandle, Manager, State, Url, WebviewUrl, WebviewWindowBuilder, WindowEvent,
 };
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_opener::OpenerExt;
 
@@ -22,7 +23,7 @@ const DEVHUB_URL: &str = match option_env!("DEVHUB_URL") {
     None => "http://localhost:5173",
 };
 
-const COMMANDS: [&str; 8] = [
+const COMMANDS: [&str; 9] = [
     "folders_list",
     "folders_add",
     "folders_remove",
@@ -31,6 +32,7 @@ const COMMANDS: [&str; 8] = [
     "tools",
     "notify",
     "set_unread",
+    "docker_containers",
 ];
 
 /// Folders the user picked in the native dialog. Commands only act on these exact paths.
@@ -51,7 +53,10 @@ impl Folders {
             .ok()
             .and_then(|s| serde_json::from_str(&s).ok())
             .unwrap_or_default();
-        Self { file, list: Mutex::new(list) }
+        Self {
+            file,
+            list: Mutex::new(list),
+        }
     }
 
     fn snapshot(&self) -> Vec<Folder> {
@@ -92,7 +97,11 @@ fn folders_list(folders: State<Folders>) -> Vec<Folder> {
 
 #[tauri::command]
 async fn folders_add(app: AppHandle, folders: State<'_, Folders>) -> Result<Vec<Folder>, String> {
-    let picked = app.dialog().file().set_title("Autorizar pasta no DevHub").blocking_pick_folder();
+    let picked = app
+        .dialog()
+        .file()
+        .set_title("Autorizar pasta no DevHub")
+        .blocking_pick_folder();
     if let Some(path) = picked.and_then(|p| p.into_path().ok()) {
         let path = path.to_string_lossy().into_owned();
         let mut list = folders.list.lock().unwrap().clone();
@@ -107,8 +116,14 @@ async fn folders_add(app: AppHandle, folders: State<'_, Folders>) -> Result<Vec<
 
 #[tauri::command]
 fn folders_remove(path: String, folders: State<Folders>) -> Result<Vec<Folder>, String> {
-    let list: Vec<String> =
-        folders.list.lock().unwrap().iter().filter(|p| **p != path).cloned().collect();
+    let list: Vec<String> = folders
+        .list
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|p| **p != path)
+        .cloned()
+        .collect();
     folders.save(&list)?;
     *folders.list.lock().unwrap() = list;
     Ok(folders.snapshot())
@@ -130,7 +145,16 @@ fn open_in(path: String, target: local::Target, folders: State<Folders>) -> Resu
 
 #[tauri::command]
 async fn tools() -> Result<Vec<local::Tool>, String> {
-    tauri::async_runtime::spawn_blocking(local::tools).await.map_err(|e| e.to_string())
+    tauri::async_runtime::spawn_blocking(local::tools)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn docker_containers() -> Result<Vec<local::Container>, String> {
+    tauri::async_runtime::spawn_blocking(local::docker_containers)
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 fn clip(s: &str, max: usize) -> String {
@@ -167,18 +191,33 @@ fn show_main(app: &AppHandle) {
     }
 }
 
+/// Ctrl+Shift+Space from anywhere: bring DevHub forward and open Spotlight. The web app listens
+/// for the DOM event, so no event permission is granted to the page.
+fn summon(app: &AppHandle) {
+    show_main(app);
+    if let Some(w) = app.get_webview_window("main") {
+        let _ = w.eval("window.dispatchEvent(new CustomEvent('devhub:spotlight'))");
+    }
+}
+
 /// GitHub's OAuth pages must load in the window so the callback reaches the same session.
 fn stays_in_window(url: &Url, origin: &Url) -> bool {
     url.origin() == origin.origin()
         || (url.host_str() == Some("github.com")
-            && ["/login", "/sessions"].iter().any(|p| url.path().starts_with(p)))
+            && ["/login", "/sessions"]
+                .iter()
+                .any(|p| url.path().starts_with(p)))
 }
 
 pub fn run() {
-    let origin: Url = DEVHUB_URL.parse().expect("DEVHUB_URL must be an absolute URL");
+    let origin: Url = DEVHUB_URL
+        .parse()
+        .expect("DEVHUB_URL must be an absolute URL");
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_single_instance::init(|app, _, _| show_main(app)))
+        .plugin(tauri_plugin_single_instance::init(|app, _, _| {
+            show_main(app)
+        }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
@@ -190,7 +229,8 @@ pub fn run() {
             open_in,
             tools,
             notify,
-            set_unread
+            set_unread,
+            docker_containers
         ])
         .setup(move |app| {
             let data = app.path().app_data_dir()?;
@@ -205,6 +245,22 @@ pub fn run() {
                 capability = capability.permission(format!("allow-{}", c.replace('_', "-")));
             }
             app.add_capability(capability)?;
+
+            let summon_key =
+                Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::Space);
+            app.handle().plugin(
+                tauri_plugin_global_shortcut::Builder::new()
+                    .with_handler(move |app, key, event| {
+                        if key == &summon_key && event.state() == ShortcutState::Pressed {
+                            summon(app);
+                        }
+                    })
+                    .build(),
+            )?;
+            // Another app may own the combination; the desktop app still works without it.
+            if let Err(e) = app.global_shortcut().register(summon_key) {
+                eprintln!("global shortcut Ctrl+Shift+Space unavailable: {e}");
+            }
 
             let handle = app.handle().clone();
             let popup_handle = app.handle().clone();

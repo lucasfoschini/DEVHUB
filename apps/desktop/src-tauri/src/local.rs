@@ -44,7 +44,10 @@ pub struct Commit {
 
 /// Parses `git status --porcelain=v2 --branch`.
 pub fn parse_status(out: &str) -> GitStatus {
-    let mut s = GitStatus { is_repo: true, ..Default::default() };
+    let mut s = GitStatus {
+        is_repo: true,
+        ..Default::default()
+    };
     for line in out.lines() {
         if let Some(head) = line.strip_prefix("# branch.head ") {
             s.branch = (head != "(detached)").then(|| head.to_string());
@@ -119,7 +122,11 @@ pub fn open_in(path: &str, target: Target) -> Result<(), String> {
         }
         #[cfg(not(windows))]
         Target::Explorer => {
-            let mut c = Command::new(if cfg!(target_os = "macos") { "open" } else { "xdg-open" });
+            let mut c = Command::new(if cfg!(target_os = "macos") {
+                "open"
+            } else {
+                "xdg-open"
+            });
             c.arg(path);
             c
         }
@@ -129,7 +136,11 @@ pub fn open_in(path: &str, target: Target) -> Result<(), String> {
             c
         }
         Target::Cursor => {
-            let mut c = command(if cfg!(windows) { "cursor.cmd" } else { "cursor" });
+            let mut c = command(if cfg!(windows) {
+                "cursor.cmd"
+            } else {
+                "cursor"
+            });
             c.arg(path);
             c
         }
@@ -142,7 +153,9 @@ pub fn open_in(path: &str, target: Target) -> Result<(), String> {
         #[cfg(not(windows))]
         Target::Terminal => return Err("Terminal ainda não suportado neste sistema".into()),
     };
-    c.spawn().map(|_| ()).map_err(|_| "Ferramenta não encontrada no PATH".into())
+    c.spawn()
+        .map(|_| ())
+        .map_err(|_| "Ferramenta não encontrada no PATH".into())
 }
 
 #[derive(Serialize)]
@@ -158,8 +171,20 @@ pub fn tools() -> Vec<Tool> {
         ("git", "Git", "git"),
         ("node", "Node.js", "node"),
         ("docker", "Docker", "docker"),
-        ("vscode", "VS Code", if cfg!(windows) { "code.cmd" } else { "code" }),
-        ("cursor", "Cursor", if cfg!(windows) { "cursor.cmd" } else { "cursor" }),
+        (
+            "vscode",
+            "VS Code",
+            if cfg!(windows) { "code.cmd" } else { "code" },
+        ),
+        (
+            "cursor",
+            "Cursor",
+            if cfg!(windows) {
+                "cursor.cmd"
+            } else {
+                "cursor"
+            },
+        ),
     ];
     probe
         .iter()
@@ -172,15 +197,82 @@ pub fn tools() -> Vec<Tool> {
                 .ok()
                 .filter(|o| o.status.success())
                 .and_then(|o| {
-                    String::from_utf8_lossy(&o.stdout).lines().next().map(|l| l.trim().to_string())
+                    String::from_utf8_lossy(&o.stdout)
+                        .lines()
+                        .next()
+                        .map(|l| l.trim().to_string())
                 }),
         })
         .collect()
 }
 
+#[derive(Serialize, Debug, PartialEq)]
+pub struct Container {
+    pub id: String,
+    pub name: String,
+    pub image: String,
+    pub state: String,
+    pub status: String,
+    pub ports: String,
+}
+
+/// One `docker ps --format "{{json .}}"` line per container; lines that do not parse are skipped.
+pub fn parse_containers(out: &str) -> Vec<Container> {
+    out.lines()
+        .filter_map(|l| serde_json::from_str::<serde_json::Value>(l).ok())
+        .map(|v| {
+            let f = |k: &str| v[k].as_str().unwrap_or_default().to_string();
+            Container {
+                id: f("ID"),
+                name: f("Names"),
+                image: f("Image"),
+                state: f("State"),
+                status: f("Status"),
+                ports: f("Ports"),
+            }
+        })
+        .collect()
+}
+
+/// Local containers, read only. Fails with Docker's own message when the daemon is down.
+pub fn docker_containers() -> Result<Vec<Container>, String> {
+    let out = command("docker")
+        .args(["ps", "--all", "--format", "{{json .}}"])
+        .output()
+        .map_err(|_| "Docker não está instalado".to_string())?;
+    if !out.status.success() {
+        let err = String::from_utf8_lossy(&out.stderr);
+        return Err(err
+            .lines()
+            .next()
+            .unwrap_or("Docker não respondeu")
+            .to_string());
+    }
+    Ok(parse_containers(&String::from_utf8_lossy(&out.stdout)))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parses_docker_ps_json_lines() {
+        let out = concat!(
+            r#"{"ID":"ab12","Names":"devhub-postgres-1","Image":"postgres:18","State":"running","Status":"Up 2 hours","Ports":"127.0.0.1:5433->5432/tcp"}"#,
+            "\nnot json\n"
+        );
+        assert_eq!(
+            parse_containers(out),
+            vec![Container {
+                id: "ab12".into(),
+                name: "devhub-postgres-1".into(),
+                image: "postgres:18".into(),
+                state: "running".into(),
+                status: "Up 2 hours".into(),
+                ports: "127.0.0.1:5433->5432/tcp".into(),
+            }]
+        );
+    }
 
     #[test]
     fn parses_branch_counts_and_detached() {

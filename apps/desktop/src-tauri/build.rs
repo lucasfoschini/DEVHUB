@@ -11,6 +11,7 @@ fn main() {
             "tools",
             "notify",
             "set_unread",
+            "docker_containers",
         ]),
     ))
     .expect("failed to run tauri-build");

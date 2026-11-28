@@ -2,7 +2,7 @@
  *  storage, normalized resources, reconnect flow and workspace isolation. */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { GOOD_KEY, REVOKED_KEY, revoked } from './fake-providers.ts'
+import { GOOD_KEY, REVOKED_KEY, lastLogsQuery, revoked } from './fake-providers.ts'
 import { api, signUp } from './server.ts'
 
 const json = async <T>(res: Response) => (await res.json()) as T
@@ -79,6 +79,56 @@ test('providers: normalized resources for each provider', async () => {
 
   assert.equal((await api(cookie, 'DELETE', '/providers/neon')).status, 204)
   assert.equal((await api(cookie, 'DELETE', '/providers/neon')).status, 404)
+})
+
+test('providers: Render logs and metrics, Vercel build events', async () => {
+  const cookie = await signUp('prov-detail')
+  assert.deepEqual(await json(await api(cookie, 'GET', '/providers/render/services/srv-1/logs')), {
+    provider: 'render',
+    connected: false,
+  })
+  await api(cookie, 'PUT', '/providers/render', { token: GOOD_KEY })
+  await api(cookie, 'PUT', '/providers/vercel', { token: GOOD_KEY })
+
+  const logs = await json<{ lines: { id: string; level: string | null; text: string }[] }>(
+    await api(cookie, 'GET', '/providers/render/services/srv-1/logs'),
+  )
+  assert.deepEqual(
+    logs.lines.map((l) => [l.id, l.level]),
+    [
+      ['l1', null],
+      ['l2', 'info'],
+    ],
+  )
+  const q = new URLSearchParams(lastLogsQuery.value.split('?')[1])
+  assert.deepEqual([q.get('ownerId'), q.get('resource')], ['tea-1', 'srv-1'])
+
+  const metrics = await json<{
+    cpu: { labels: Record<string, string> }[]
+    memory: { unit: string; values: { value: number }[] }[]
+    requests: unknown[]
+  }>(await api(cookie, 'GET', '/providers/render/services/srv-1/metrics'))
+  assert.equal(metrics.cpu[0]!.labels.instance, 'srv-1-a')
+  assert.deepEqual(
+    [metrics.memory[0]!.unit, metrics.memory[0]!.values[0]!.value],
+    ['bytes', 1048576],
+  )
+  assert.deepEqual(metrics.requests, [])
+
+  const events = await json<{ lines: { id: string; text: string }[] }>(
+    await api(cookie, 'GET', '/providers/vercel/deployments/dpl_1/events'),
+  )
+  assert.deepEqual(
+    events.lines.map((l) => [l.id, l.text]),
+    [
+      ['e1', 'vite build'],
+      ['e2', 'Build ok'],
+    ],
+  )
+
+  // A service the key cannot see is 404; a malformed id never reaches the provider.
+  assert.equal((await api(cookie, 'GET', '/providers/render/services/srv-9/logs')).status, 404)
+  assert.equal((await api(cookie, 'GET', '/providers/render/services/a.b/logs')).status, 400)
 })
 
 test('providers: a revoked key flips to needs_reconnect and notifies once', async () => {

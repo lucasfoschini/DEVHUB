@@ -17,4 +17,5 @@ Phase 4 needs a first deploy provider. The user deploys the front end on Vercel 
 
 - Keys can also write at the provider. DevHub never calls write endpoints, and the screen says so. Triggering deploys stays out of scope until there is an explicit, audited action design.
 - Vercel team-scoped keys see only the personal scope for now (no `teamId`).
-- Render logs and metrics, Neon consumption metrics, and Docker are not covered yet.
+- Detail reads (added 2026-11-27): the last 100 Render log lines (`/v1/logs`, ownerId from the service), Render CPU, memory and HTTP request series for the last hour, and the last 100 lines of a Vercel deployment's build output (`/v3/deployments/:id/events`, `follow=0`). Same key, cache and reconnect path. Units are shown as Render returns them.
+- Not covered: Vercel runtime logs, Neon consumption metrics, any write action.

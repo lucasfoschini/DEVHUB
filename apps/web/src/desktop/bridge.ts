@@ -25,6 +25,15 @@ export interface Tool {
   version: string | null
 }
 
+export interface Container {
+  id: string
+  name: string
+  image: string
+  state: string
+  status: string
+  ports: string
+}
+
 export type OpenTarget = 'explorer' | 'vscode' | 'cursor' | 'terminal'
 
 interface Commands {
@@ -36,6 +45,7 @@ interface Commands {
   tools: [Record<string, never>, Tool[]]
   notify: [{ title: string; body: string }, null]
   set_unread: [{ count: number }, null]
+  docker_containers: [Record<string, never>, Container[]]
 }
 
 type RawInvoke = (cmd: string, args?: object) => Promise<unknown>

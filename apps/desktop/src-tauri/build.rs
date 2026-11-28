@@ -12,6 +12,9 @@ fn main() {
             "notify",
             "set_unread",
             "docker_containers",
+            "agent_status",
+            "agent_pair",
+            "agent_unpair",
         ]),
     ))
     .expect("failed to run tauri-build");

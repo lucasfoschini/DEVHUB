@@ -2,6 +2,7 @@ import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'reac
 import { Link } from 'react-router'
 import { Switch } from 'radix-ui'
 import { inputClass, primaryButton, secondaryButton } from '../components/formStyles'
+import { DeviceSettings } from '../agent/Devices'
 import { ProviderKeys } from '../providers/ProviderPanels'
 import { request, useSession } from '../session'
 
@@ -392,6 +393,12 @@ export function SettingsPage() {
       </Section>
       <Section title="Integrações">
         <Integrations />
+      </Section>
+      <Section
+        title="Computadores (Local Agent)"
+        description="Um computador pareado responde, de qualquer navegador, às ações marcadas enquanto o app desktop estiver aberto."
+      >
+        <DeviceSettings />
       </Section>
     </div>
   )

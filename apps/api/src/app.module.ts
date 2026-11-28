@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { AgentController, AgentGuard, AgentService, DevicesController } from './agent/agent.js'
 import { AuditService } from './audit/audit.service.js'
 import { AUTH, createAuth } from './auth/auth.js'
 import { SessionGuard } from './auth/session.guard.js'
@@ -50,6 +51,8 @@ export { ENV }
     DeploymentsController,
     AnalyticsController,
     ProvidersController,
+    DevicesController,
+    AgentController,
   ],
   providers: [
     { provide: ENV, useFactory: () => loadEnv() },
@@ -81,6 +84,8 @@ export { ENV }
     DeploymentsService,
     AnalyticsService,
     ProvidersService,
+    AgentService,
+    AgentGuard,
   ],
 })
 export class AppModule {}

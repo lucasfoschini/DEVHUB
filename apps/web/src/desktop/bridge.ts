@@ -34,6 +34,12 @@ export interface Container {
   ports: string
 }
 
+export interface AgentStatus {
+  paired: boolean
+  deviceId: string | null
+  running: boolean
+}
+
 export type OpenTarget = 'explorer' | 'vscode' | 'cursor' | 'terminal'
 
 interface Commands {
@@ -46,6 +52,9 @@ interface Commands {
   notify: [{ title: string; body: string }, null]
   set_unread: [{ count: number }, null]
   docker_containers: [Record<string, never>, Container[]]
+  agent_status: [Record<string, never>, AgentStatus]
+  agent_pair: [{ code: string }, null]
+  agent_unpair: [Record<string, never>, null]
 }
 
 type RawInvoke = (cmd: string, args?: object) => Promise<unknown>

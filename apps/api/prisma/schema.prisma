@@ -81,14 +81,14 @@ enum Role {
 }
 
 model Workspace {
-  id                     String         @id @default(uuid(7))
+  id                     String          @id @default(uuid(7))
   name                   String
   /// Set only for a user's personal workspace; unique so creating it is idempotent.
-  personalFor            String?        @unique
+  personalFor            String?         @unique
   /// Notification kinds this workspace does not want (Settings). Checked when emitting.
-  mutedNotificationKinds String[]       @default([])
-  createdAt              DateTime       @default(now())
-  updatedAt              DateTime       @updatedAt
+  mutedNotificationKinds String[]        @default([])
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
   memberships            Membership[]
   auditLogs              AuditLog[]
   projects               Project[]
@@ -102,6 +102,8 @@ model Workspace {
   notes                  Note[]
   automations            Automation[]
   prompts                Prompt[]
+  devices                Device[]
+  devicePairings         DevicePairing[]
 
   @@map("workspace")
 }
@@ -457,4 +459,67 @@ model Prompt {
 
   @@unique([workspaceId, title])
   @@map("prompt")
+}
+
+/// A computer paired as a Local Agent (Phase 5, ADR 0007). Only the hash of its secret is stored.
+model Device {
+  id           String     @id @default(uuid(7))
+  workspaceId  String
+  workspace    Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name         String
+  platform     String
+  secretHash   String     @unique
+  /// Actions the user allows on this device (Settings).
+  capabilities String[]   @default([])
+  /// Folders the agent last reported as authorized: [{ path, name }].
+  folders      Json       @default("[]")
+  pairedById   String
+  lastSeenAt   DateTime?
+  createdAt    DateTime   @default(now())
+  jobs         AgentJob[]
+
+  @@index([workspaceId])
+  @@map("device")
+}
+
+/// One-time code that lets a desktop app become a Device. Valid 10 minutes.
+model DevicePairing {
+  id          String    @id @default(uuid(7))
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  codeHash    String    @unique
+  createdById String
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@map("device_pairing")
+}
+
+enum AgentJobStatus {
+  queued
+  running
+  succeeded
+  failed
+  expired
+}
+
+/// A typed action queued for a device, claimed once by its agent.
+model AgentJob {
+  id            String         @id @default(uuid(7))
+  workspaceId   String
+  deviceId      String
+  device        Device         @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  action        String
+  params        Json           @default("{}")
+  status        AgentJobStatus @default(queued)
+  result        Json?
+  error         String?
+  requestedById String
+  createdAt     DateTime       @default(now())
+  expiresAt     DateTime
+  finishedAt    DateTime?
+
+  @@index([deviceId, status, createdAt])
+  @@map("agent_job")
 }

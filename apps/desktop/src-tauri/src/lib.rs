@@ -2,6 +2,7 @@
 //! web app from its own origin, so sessions stay first-party cookies. Only that origin gets IPC,
 //! and only the typed commands below.
 
+mod agent;
 mod local;
 
 use serde::Serialize;
@@ -23,7 +24,7 @@ const DEVHUB_URL: &str = match option_env!("DEVHUB_URL") {
     None => "http://localhost:5173",
 };
 
-const COMMANDS: [&str; 9] = [
+const COMMANDS: [&str; 12] = [
     "folders_list",
     "folders_add",
     "folders_remove",
@@ -33,16 +34,19 @@ const COMMANDS: [&str; 9] = [
     "notify",
     "set_unread",
     "docker_containers",
+    "agent_status",
+    "agent_pair",
+    "agent_unpair",
 ];
 
 /// Folders the user picked in the native dialog. Commands only act on these exact paths.
-struct Folders {
+pub(crate) struct Folders {
     file: PathBuf,
     list: Mutex<Vec<String>>,
 }
 
 #[derive(Serialize)]
-struct Folder {
+pub(crate) struct Folder {
     path: String,
     name: String,
 }
@@ -59,7 +63,7 @@ impl Folders {
         }
     }
 
-    fn snapshot(&self) -> Vec<Folder> {
+    pub(crate) fn snapshot(&self) -> Vec<Folder> {
         self.list
             .lock()
             .unwrap()
@@ -81,7 +85,7 @@ impl Folders {
         fs::write(&self.file, serde_json::to_string(list).unwrap()).map_err(|e| e.to_string())
     }
 
-    fn authorized(&self, path: &str) -> Result<(), String> {
+    pub(crate) fn authorized(&self, path: &str) -> Result<(), String> {
         if self.list.lock().unwrap().iter().any(|p| p == path) {
             Ok(())
         } else {
@@ -157,6 +161,24 @@ async fn docker_containers() -> Result<Vec<local::Container>, String> {
         .map_err(|e| e.to_string())?
 }
 
+#[tauri::command]
+fn agent_status(agent: State<agent::Agent>) -> agent::Status {
+    agent::status(&agent)
+}
+
+#[tauri::command]
+async fn agent_pair(app: AppHandle, code: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || agent::pair(&app, DEVHUB_URL, &code))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// Forgets the local secret. The page revokes the device on the server first.
+#[tauri::command]
+fn agent_unpair(agent: State<agent::Agent>) {
+    agent::unpair(&agent);
+}
+
 fn clip(s: &str, max: usize) -> String {
     s.chars().take(max).collect()
 }
@@ -230,11 +252,16 @@ pub fn run() {
             tools,
             notify,
             set_unread,
-            docker_containers
+            docker_containers,
+            agent_status,
+            agent_pair,
+            agent_unpair
         ])
         .setup(move |app| {
             let data = app.path().app_data_dir()?;
             app.manage(Folders::load(data.join("folders.json")));
+            app.manage(agent::Agent::default());
+            agent::start(app.handle(), DEVHUB_URL);
 
             let mut capability = CapabilityBuilder::new("devhub-origin")
                 .window("main")

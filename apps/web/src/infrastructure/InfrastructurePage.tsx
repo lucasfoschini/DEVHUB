@@ -4,6 +4,7 @@ import { Pencil, Plus, Server as ServerIcon, Trash2 } from 'lucide-react'
 import { inputClass, primaryButton, secondaryButton } from '../components/formStyles'
 import { Field, Loadable, PageShell, Panel } from '../components/page'
 import { NeonPanel } from '../providers/ProviderPanels'
+import { RemoteDevices } from '../agent/Devices'
 import { DockerPanel } from './DockerPanel'
 import {
   ENV_LABEL,
@@ -304,6 +305,7 @@ export function InfrastructurePage() {
         <NeonPanel />
       </div>
       <DockerPanel />
+      <RemoteDevices />
     </PageShell>
   )
 }
